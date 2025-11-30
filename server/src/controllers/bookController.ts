@@ -50,27 +50,39 @@ export const createBook = async (req: Request, res: Response) => {
   const imageRepo = AppDataSource.getRepository(BookImage);
   const user = req.user as User;
   try {
-    const { isbn, title, author, publisher, publishedAt, price, condition, description } = req.body;
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, listPrice } = req.body;
     const book = repo.create({
       isbn,
       title,
       author,
       publisher,
       publishedAt,
-      price,
+      price: price ? Number(price) : 0,
+      listPrice: listPrice ? Number(listPrice) : null,
       condition,
       description,
       seller: user,
       status: 'ON',
     });
-    if (req.files && Array.isArray(req.files)) {
+
+    const savedBook = await repo.save(book);
+
+    if (req.files && Array.isArray(req.files) && req.files.length) {
       const files = req.files as Express.Multer.File[];
-      book.mainImage = files[0]?.path.replace(/\\/g, '/') ?? null as any;
-      const images = files.map((f) => imageRepo.create({ book, url: f.path.replace(/\\/g, '/') }));
-      book.images = await imageRepo.save(images);
+      const images = await imageRepo.save(
+        files.map((f) =>
+          imageRepo.create({
+            book: savedBook,
+            url: f.filename ? `uploads/${f.filename}` : f.path.replace(/\\/g, '/'),
+          })
+        )
+      );
+      savedBook.images = images;
+      savedBook.mainImage = (images[0]?.url ?? null) as any;
+      await repo.save(savedBook);
     }
-    const saved = await repo.save(book);
-    return res.status(201).json(saved);
+
+    return res.status(201).json(savedBook);
   } catch (err) {
     return res.status(500).json({ message: 'Error creating book', error: err });
   }
@@ -85,14 +97,36 @@ export const updateBook = async (req: Request, res: Response) => {
     const book = await repo.findOne({ where: { id: Number(req.params.id) }, relations: ['seller', 'images'] });
     if (!book) return res.status(404).json({ message: 'Book not found' });
     if (book.seller.id !== user.id) return res.status(403).json({ message: 'Forbidden' });
-    const { isbn, title, author, publisher, publishedAt, price, condition, description, status } = req.body;
-    Object.assign(book, { isbn, title, author, publisher, publishedAt, price, condition, description, status });
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, status, listPrice } = req.body;
+    Object.assign(book, {
+      isbn,
+      title,
+      author,
+      publisher,
+      publishedAt,
+      price,
+      condition,
+      description,
+      status,
+      listPrice: listPrice ? Number(listPrice) : null,
+    });
 
     if (req.files && Array.isArray(req.files) && req.files.length) {
       await imageRepo.delete({ book: { id: book.id } });
       const files = req.files as Express.Multer.File[];
-      book.mainImage = files[0]?.path.replace(/\\/g, '/') ?? book.mainImage;
-      book.images = await imageRepo.save(files.map((f) => imageRepo.create({ book, url: f.path.replace(/\\/g, '/') })));
+      book.mainImage = files[0]
+        ? files[0].filename
+          ? `uploads/${files[0].filename}`
+          : files[0].path.replace(/\\/g, '/')
+        : book.mainImage;
+      book.images = await imageRepo.save(
+        files.map((f) =>
+          imageRepo.create({
+            book,
+            url: f.filename ? `uploads/${f.filename}` : f.path.replace(/\\/g, '/'),
+          })
+        )
+      );
     }
     const saved = await repo.save(book);
     return res.json(saved);
@@ -121,21 +155,31 @@ export const deleteBook = async (req: Request, res: Response) => {
 export const searchByIsbn = async (req: Request, res: Response) => {
   const { isbn } = req.params;
   try {
-    const response = await axios.get('https://openapi.naver.com/v1/search/book.json', {
-      params: { query: isbn, d_isbn: isbn },
-      headers: {
-        'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
-        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
-      },
-    });
-    const item = response.data.items?.[0];
-    if (!item) return res.status(404).json({ message: 'Not found' });
+    const headers = {
+      'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
+      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
+    };
+
+    const callSearch = async (params: Record<string, string>) => {
+      const response = await axios.get('https://openapi.naver.com/v1/search/book.json', { params, headers });
+      return response.data.items?.[0] ?? null;
+    };
+
+    const isbnResult = await callSearch({ d_isbn: isbn });
+    const needsFallback = !isbnResult?.price;
+    const queryResult = needsFallback ? await callSearch({ query: isbn }) : null;
+
+    const item = isbnResult || queryResult;
+    if (!item && !queryResult) return res.status(404).json({ message: 'Not found' });
+
+    const source = item?.price ? item : queryResult || isbnResult;
     const normalized = {
-      title: item.title?.replace(/<[^>]*>/g, ''),
-      author: item.author,
-      publisher: item.publisher,
-      publishedAt: item.pubdate,
-      image: item.image,
+      title: source?.title?.replace(/<[^>]*>/g, ''),
+      author: source?.author,
+      publisher: source?.publisher,
+      publishedAt: source?.pubdate,
+      image: source?.image,
+      listPrice: source?.price ? Number(source.price) : null,
     };
     return res.json(normalized);
   } catch (err) {

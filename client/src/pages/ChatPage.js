@@ -15,6 +15,7 @@ const ChatPage = () => {
   const [appointmentPanelOpen, setAppointmentPanelOpen] = useState({});
   const [searchParams] = useSearchParams();
   const targetRoomId = searchParams.get('roomId');
+  const isSeller = selectedRoom && user?.id === selectedRoom.seller?.id;
 
   const toInputDateTime = (value) => {
     if (!value) return '';
@@ -97,9 +98,9 @@ const ChatPage = () => {
     setAppointmentPlace(selectedRoom.appointmentPlace || '');
     setAppointmentPanelOpen((prev) => ({
       ...prev,
-      [selectedRoom.id]: hasAppointment ? prev[selectedRoom.id] ?? true : false,
+      [selectedRoom.id]: isSeller && hasAppointment ? prev[selectedRoom.id] ?? true : false,
     }));
-  }, [selectedRoom]);
+  }, [selectedRoom, isSeller]);
 
   const sendMessage = async () => {
     await api.post('/chat/messages', { roomId: selectedRoom.id, message: text });
@@ -110,6 +111,10 @@ const ChatPage = () => {
 
   const saveAppointment = async (nextAt, nextPlace) => {
     if (!selectedRoom) return;
+    if (!isSeller) {
+      alert('판매자만 약속을 생성하거나 변경할 수 있습니다.');
+      return;
+    }
     setSavingAppointment(true);
     try {
       const res = await api.post(`/chat/rooms/${selectedRoom.id}/appointment`, {
@@ -169,8 +174,9 @@ const ChatPage = () => {
     setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: true }));
   };
 
-  const currentPanelOpen = selectedRoom ? appointmentPanelOpen[selectedRoom.id] : false;
+  const currentPanelOpen = isSeller && selectedRoom ? appointmentPanelOpen[selectedRoom.id] : false;
   const hasAppointment = !!(selectedRoom?.appointmentAt || selectedRoom?.appointmentPlace);
+  const shouldShowAppointment = hasAppointment || isSeller;
   const closeAppointmentPanel = () => {
     if (selectedRoom) {
       setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: false }));
@@ -214,7 +220,7 @@ const ChatPage = () => {
             </div>
             {selectedRoom && (
               <div className="flex" style={{ gap: 8 }}>
-                {!hasAppointment && !currentPanelOpen && (
+                {!hasAppointment && !currentPanelOpen && isSeller && (
                   <button className="ghost" onClick={openAppointmentPanel}>
                     약속 만들기
                   </button>
@@ -226,12 +232,14 @@ const ChatPage = () => {
 
           {selectedRoom ? (
             <>
-              {(hasAppointment || currentPanelOpen) && (
+              {shouldShowAppointment && (hasAppointment || currentPanelOpen || isSeller) && (
                 <div className="appointment-card">
                   <div
                     className="appointment-header"
                     onClick={() =>
-                      hasAppointment && setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }))
+                      isSeller && hasAppointment
+                        ? setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }))
+                        : undefined
                     }
                   >
                     <div>
@@ -241,31 +249,33 @@ const ChatPage = () => {
                       </div>
                       <p className="muted" style={{ margin: '4px 0 0' }}>{formatAppointment(selectedRoom.appointmentAt, selectedRoom.appointmentPlace)}</p>
                     </div>
-                    {hasAppointment ? (
-                      <button
-                        className="ghost"
-                        style={{ padding: '6px 10px' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }));
-                        }}
-                      >
-                        {currentPanelOpen ? '접기' : '펼치기'}
-                      </button>
-                    ) : (
-                      <button
-                        className="ghost"
-                        style={{ padding: '6px 10px' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          closeAppointmentPanel();
-                        }}
-                      >
-                        닫기
-                      </button>
+                    {isSeller && (
+                      hasAppointment ? (
+                        <button
+                          className="ghost"
+                          style={{ padding: '6px 10px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }));
+                          }}
+                        >
+                          {currentPanelOpen ? '접기' : '펼치기'}
+                        </button>
+                      ) : (
+                        <button
+                          className="ghost"
+                          style={{ padding: '6px 10px' }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            closeAppointmentPanel();
+                          }}
+                        >
+                          닫기
+                        </button>
+                      )
                     )}
                   </div>
-                  {currentPanelOpen && (
+                  {currentPanelOpen && isSeller && (
                     <div className="appointment-body">
                       <div className="form-grid">
                         <input
@@ -273,28 +283,32 @@ const ChatPage = () => {
                           step={900}
                           value={appointmentAt}
                           onChange={(e) => setAppointmentAt(e.target.value)}
+                          disabled={!isSeller}
                           placeholder="약속 시간"
                         />
                         <input
                           value={appointmentPlace}
                           onChange={(e) => setAppointmentPlace(e.target.value)}
+                          disabled={!isSeller}
                           placeholder="장소 또는 링크"
                         />
                       </div>
-                      <div className="flex" style={{ marginTop: 10 }}>
-                        <button onClick={handleSaveAppointment} disabled={savingAppointment}>
-                          {savingAppointment ? '저장 중...' : '약속 저장'}
-                        </button>
-                        {hasAppointment && (
-                          <button
-                            className="ghost"
-                            onClick={clearAppointment}
-                            disabled={savingAppointment || (!selectedRoom.appointmentAt && !selectedRoom.appointmentPlace)}
-                          >
-                            약속 비우기
+                      {isSeller && (
+                        <div className="flex" style={{ marginTop: 10 }}>
+                          <button onClick={handleSaveAppointment} disabled={savingAppointment}>
+                            {savingAppointment ? '저장 중...' : '약속 저장'}
                           </button>
-                        )}
-                      </div>
+                          {hasAppointment && (
+                            <button
+                              className="ghost"
+                              onClick={clearAppointment}
+                              disabled={savingAppointment || (!selectedRoom.appointmentAt && !selectedRoom.appointmentPlace)}
+                            >
+                              약속 비우기
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

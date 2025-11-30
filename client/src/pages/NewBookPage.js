@@ -9,6 +9,7 @@ const NewBookPage = () => {
     publisher: '',
     publishedAt: '',
     price: '',
+    listPrice: '',
     condition: 'A',
     description: '',
   });
@@ -16,6 +17,21 @@ const NewBookPage = () => {
   const [lookupResult, setLookupResult] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [searching, setSearching] = useState(false);
+
+  const getSuggestedPrice = () => {
+    if (!form.listPrice) return null;
+    const base = Number(form.listPrice);
+    if (Number.isNaN(base)) return null;
+    const ratioMap = { S: 0.8, A: 0.65, B: 0.5, C: 0.4 };
+    const ratio = ratioMap[form.condition] ?? 0.5;
+    return Math.round(base * ratio);
+  };
+
+  const pricePlaceholder = () => {
+    const suggested = getSuggestedPrice();
+    if (!suggested) return '가격제안 : -원';
+    return `가격제안 : ${suggested.toLocaleString()}원`;
+  };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -41,7 +57,11 @@ const NewBookPage = () => {
     try {
       const res = await api.get(`/books/isbn/${form.isbn}`);
       setLookupResult(res.data);
-      setForm((prev) => ({ ...prev, ...res.data }));
+      setForm((prev) => ({
+        ...prev,
+        ...res.data,
+        listPrice: res.data.listPrice ? String(res.data.listPrice) : '',
+      }));
     } catch (err) {
       alert('ISBN 검색 결과가 없습니다.');
     } finally {
@@ -69,13 +89,19 @@ const NewBookPage = () => {
           <input name="author" placeholder="저자" value={form.author} onChange={handleChange} />
           <input name="publisher" placeholder="출판사" value={form.publisher} onChange={handleChange} />
           <input name="publishedAt" placeholder="출판일" value={form.publishedAt} onChange={handleChange} />
-          <input name="price" placeholder="가격" value={form.price} onChange={handleChange} />
           <select name="condition" value={form.condition} onChange={handleChange}>
             <option value="S">S · 새 책 수준</option>
             <option value="A">A · 사용감 적음</option>
             <option value="B">B · 보통</option>
             <option value="C">C · 사용감 많음</option>
           </select>
+          <input
+            name="price"
+            placeholder={pricePlaceholder()}
+            value={form.price}
+            onChange={handleChange}
+          />
+          <input name="listPrice" placeholder="정가 (네이버 자동입력)" value={form.listPrice} onChange={handleChange} />
         </div>
         <textarea name="description" placeholder="책에 대한 설명을 추가하세요" value={form.description} onChange={handleChange} />
         <input type="file" multiple onChange={(e) => setImages(Array.from(e.target.files || []))} />
