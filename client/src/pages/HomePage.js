@@ -40,12 +40,20 @@ const HomePage = () => {
         {books.map((book) => (
           <Link key={book.id} to={`/books/${book.id}`} className="card" style={{ textDecoration: 'none' }}>
             <div className="section-heading">
-              <h3>{book.title}</h3>
+              <div className="flex" style={{ gap: 10, alignItems: 'center' }}>
+                <h3 style={{ margin: 0, textDecoration: book.status !== 'ON' ? 'line-through' : 'none' }}>{book.title}</h3>
+                {book.status !== 'ON' && <span className="chip danger">판매완료</span>}
+              </div>
               <span className="chip">상태 {book.condition || '-'}</span>
             </div>
             <p>{book.author} · {book.publisher}</p>
             <div className="section-heading">
-              <span className="price">₩{Number(book.price).toLocaleString()}</span>
+              <span
+                className="price"
+                style={{ textDecoration: book.status !== 'ON' ? 'line-through' : 'none', color: book.status !== 'ON' ? 'var(--muted)' : undefined }}
+              >
+                ₩{Number(book.price).toLocaleString()}
+              </span>
               <span className="muted">{book.publishedAt}</span>
             </div>
           </Link>
