@@ -109,12 +109,12 @@ const HomePage = () => {
               <div className="stack" style={{ gap: 6 }}>
 
                 {/* 정가 */}
-                {book.listPrice != null && (
+                {book.listPrice && (
                   <span
                     className="muted"
                     style={{ textDecoration: 'line-through' }}
                   >
-                    정가(네이버 판매가) ₩{Number(book.listPrice).toLocaleString()}
+                    정가 ₩{Number(book.listPrice).toLocaleString()}
                   </span>
                 )}
 
@@ -139,7 +139,7 @@ const HomePage = () => {
                 </div>
 
                 {/* 할인율 */}
-                {book.listPrice != null && book.price && (
+                {book.listPrice && book.price && (
                   <span
                     className="chip"
                     style={{
