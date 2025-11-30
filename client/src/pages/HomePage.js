@@ -114,7 +114,7 @@ const HomePage = () => {
                     className="muted"
                     style={{ textDecoration: 'line-through' }}
                   >
-                    정가 ₩{Number(book.listPrice).toLocaleString()}
+                    {Number(book.listPrice).toLocaleString()}원
                   </span>
                 )}
 
@@ -134,7 +134,7 @@ const HomePage = () => {
                       color: book.status !== 'ON' ? 'var(--muted)' : undefined
                     }}
                   >
-                    할인가 ₩{Number(book.price).toLocaleString()}
+                    {Number(book.price).toLocaleString()}원
                   </span>
                 </div>
 
