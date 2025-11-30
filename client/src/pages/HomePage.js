@@ -39,6 +39,8 @@ const HomePage = () => {
     return 0;
   });
 
+  const discountByCondition = { S: 80, A: 65, B: 50, C: 35 };
+
   return (
     <div className="container stack">
 
@@ -129,12 +131,9 @@ const HomePage = () => {
                     </span>
 
                     {/* 할인율 */}
-                    {book.listPrice && book.price && (
+                    {discountByCondition[book.condition] && (
                       <span className="chip highlight">
-                        {Math.max(
-                          0,
-                          Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100)
-                        )}% 할인
+                        {discountByCondition[book.condition]}% 할인
                       </span>
                     )}
                   </div>
