@@ -28,7 +28,7 @@ const NewBookPage = () => {
     const ratioMap = { S: 0.8, A: 0.65, B: 0.5, C: 0.4 };
     const ratio = ratioMap[form.condition] ?? 0.5;
 
-    return Math.round(base * ratio);
+    return Math.round((base * ratio) / 100) * 100;
   };
 
   const pricePlaceholder = () => {
