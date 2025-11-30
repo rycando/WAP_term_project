@@ -50,27 +50,34 @@ export const createBook = async (req: Request, res: Response) => {
   const imageRepo = AppDataSource.getRepository(BookImage);
   const user = req.user as User;
   try {
-    const { isbn, title, author, publisher, publishedAt, price, condition, description } = req.body;
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, listPrice } = req.body;
     const book = repo.create({
       isbn,
       title,
       author,
       publisher,
       publishedAt,
-      price,
+      price: price ? Number(price) : 0,
+      listPrice: listPrice ? Number(listPrice) : null,
       condition,
       description,
       seller: user,
       status: 'ON',
     });
-    if (req.files && Array.isArray(req.files)) {
+
+    const savedBook = await repo.save(book);
+
+    if (req.files && Array.isArray(req.files) && req.files.length) {
       const files = req.files as Express.Multer.File[];
-      book.mainImage = files[0]?.path.replace(/\\/g, '/') ?? null as any;
-      const images = files.map((f) => imageRepo.create({ book, url: f.path.replace(/\\/g, '/') }));
-      book.images = await imageRepo.save(images);
+      const images = await imageRepo.save(
+        files.map((f) => imageRepo.create({ book: savedBook, url: f.path.replace(/\\/g, '/') }))
+      );
+      savedBook.images = images;
+      savedBook.mainImage = images[0]?.url ?? null as any;
+      await repo.save(savedBook);
     }
-    const saved = await repo.save(book);
-    return res.status(201).json(saved);
+
+    return res.status(201).json(savedBook);
   } catch (err) {
     return res.status(500).json({ message: 'Error creating book', error: err });
   }
@@ -85,8 +92,19 @@ export const updateBook = async (req: Request, res: Response) => {
     const book = await repo.findOne({ where: { id: Number(req.params.id) }, relations: ['seller', 'images'] });
     if (!book) return res.status(404).json({ message: 'Book not found' });
     if (book.seller.id !== user.id) return res.status(403).json({ message: 'Forbidden' });
-    const { isbn, title, author, publisher, publishedAt, price, condition, description, status } = req.body;
-    Object.assign(book, { isbn, title, author, publisher, publishedAt, price, condition, description, status });
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, status, listPrice } = req.body;
+    Object.assign(book, {
+      isbn,
+      title,
+      author,
+      publisher,
+      publishedAt,
+      price,
+      condition,
+      description,
+      status,
+      listPrice: listPrice ? Number(listPrice) : null,
+    });
 
     if (req.files && Array.isArray(req.files) && req.files.length) {
       await imageRepo.delete({ book: { id: book.id } });
@@ -136,6 +154,7 @@ export const searchByIsbn = async (req: Request, res: Response) => {
       publisher: item.publisher,
       publishedAt: item.pubdate,
       image: item.image,
+      listPrice: item.price ? Number(item.price) : null,
     };
     return res.json(normalized);
   } catch (err) {

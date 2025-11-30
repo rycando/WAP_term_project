@@ -221,6 +221,12 @@ button.ghost:hover {
   color: var(--muted);
 }
 
+.chip.danger {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fecdd3;
+}
+
 .price {
   font-weight: 700;
   font-size: 18px;
