@@ -29,6 +29,16 @@ const HomePage = () => {
     }
   }, [user]);
 
+  // 판매 중 도서를 우선 노출하고, 판매 완료 도서를 뒤로 보냅니다.
+  const sortedBooks = [...books].sort((a, b) => {
+    const aOnSale = a.status === 'ON';
+    const bOnSale = b.status === 'ON';
+
+    if (aOnSale && !bOnSale) return -1;
+    if (!aOnSale && bOnSale) return 1;
+    return 0;
+  });
+
   return (
     <div className="container stack">
 
@@ -52,115 +62,71 @@ const HomePage = () => {
       </div>
 
       {/* 책 목록 */}
-      <div className="grid">
-        {books.map((book) => (
+      <div className="home-grid">
+        {sortedBooks.map((book) => (
           <Link
             key={book.id}
             to={`/books/${book.id}`}
-            className="card"
+            className="card home-card"
             style={{ textDecoration: 'none' }}
           >
-
-            {/* 이미지 영역 */}
-            <div className="stack" style={{ gap: 12 }}>
-              <div className="book-thumb">
-                {book.mainImage || book.images?.[0] ? (
-                  <img
-                    src={
-                      buildImageUrl(book.mainImage) ||
-                      buildImageUrl(book.images?.[0]?.url) ||
-                      undefined
-                    }
-                    alt={book.title}
-                  />
-                ) : (
-                  <div className="thumb-placeholder">이미지 없음</div>
-                )}
-              </div>
+            <div className="home-thumb">
+              {book.mainImage || book.images?.[0] ? (
+                <img
+                  src={
+                    buildImageUrl(book.mainImage) ||
+                    buildImageUrl(book.images?.[0]?.url) ||
+                    undefined
+                  }
+                  alt={book.title}
+                />
+              ) : (
+                <div className="thumb-placeholder">이미지 없음</div>
+              )}
+              {book.status !== 'ON' && <span className="chip danger status-chip">판매완료</span>}
             </div>
 
-            {/* 제목 + 상태 */}
-            <div className="section-heading">
-              <div className="flex" style={{ gap: 10, alignItems: 'center' }}>
-                <h3
-                  style={{
-                    margin: 0,
-                    textDecoration: book.status !== 'ON' ? 'line-through' : 'none'
-                  }}
-                >
-                  {book.title}
-                </h3>
-
-                {book.status !== 'ON' && (
-                  <span className="chip danger">판매완료</span>
-                )}
+            <div className="home-card-body">
+              <div className="home-card-title">
+                <h3>{book.title}</h3>
+                <span className="chip subtle">{book.condition || '-'}</span>
               </div>
 
-              <span className="chip">상태 {book.condition || '-'}</span>
-            </div>
+              <p className="muted">{book.author} · {book.publisher}</p>
 
-            {/* 저자 / 출판사 */}
-            <p>
-              {book.author} · {book.publisher}
-            </p>
+              <div className="home-price-row">
+                <div className="stack" style={{ gap: 6 }}>
+                  {book.listPrice && (
+                    <span className="muted" style={{ textDecoration: 'line-through' }}>
+                      {Number(book.listPrice).toLocaleString()}원
+                    </span>
+                  )}
 
-            {/* 가격 표시 */}
-            <div className="section-heading">
-              <div className="stack" style={{ gap: 6 }}>
-
-                {/* 정가 */}
-                {book.listPrice && (
-                  <span
-                    className="muted"
-                    style={{ textDecoration: 'line-through' }}
-                  >
-                    {Number(book.listPrice).toLocaleString()}원
-                  </span>
-                )}
-
-                {/* 할인가 */}
-                <div
-                  className="flex"
-                  style={{
-                    gap: 10,
-                    alignItems: 'baseline',
-                    flexWrap: 'wrap'
-                  }}
-                >
-                  <span
-                    className="price"
-                    style={{
-                      textDecoration: book.status !== 'ON' ? 'line-through' : 'none',
-                      color: book.status !== 'ON' ? 'var(--muted)' : undefined
-                    }}
-                  >
-                    {Number(book.price).toLocaleString()}원
-                  </span>
-                </div>
-
-                {/* 할인율 */}
-                {book.listPrice && book.price && (
-                  <span
-                    className="chip"
-                    style={{
-                      background: 'var(--primary-100)',
-                      color: 'var(--primary-800)',
-                      width: 'fit-content'
-                    }}
-                  >
-                    {Math.max(
-                      0,
-                      Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100)
+                  <div className="flex" style={{ alignItems: 'baseline', gap: 8 }}>
+                    <span
+                      className="price"
+                      style={{
+                        textDecoration: book.status !== 'ON' ? 'line-through' : 'none',
+                        color: book.status !== 'ON' ? 'var(--muted)' : undefined
+                      }}
+                    >
+                      {Number(book.price).toLocaleString()}원
+                    </span>
+                    {book.listPrice && book.price && (
+                      <span className="chip highlight">
+                        {Math.max(
+                          0,
+                          Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100)
+                        )}% 할인
+                      </span>
                     )}
-                    % 할인
-                  </span>
-                )}
+                  </div>
+                </div>
+                <div className="home-meta">
+                  <span className="muted">출판 {book.publishedAt}</span>
+                  <span className="muted">등록 {formatDate(book.seller?.createdAt)}</span>
+                </div>
               </div>
-
-              {/* 출판일 + 판매자 등록일 */}
-              <span className="muted">
-                출판일 {book.publishedAt} · 판매자 등록일 {formatDate(book.seller?.createdAt)}
-              </span>
             </div>
           </Link>
         ))}

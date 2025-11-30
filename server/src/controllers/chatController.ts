@@ -13,7 +13,8 @@ export const createRoom = async (req: Request, res: Response) => {
     const bookRepo = AppDataSource.getRepository(Book);
     const roomRepo = AppDataSource.getRepository(ChatRoom);
     const book = await bookRepo.findOne({ where: { id: bookId }, relations: ['seller'] });
-    if (!book) return res.status(404).json({ message: 'Book not found' });
+    if (!book || book.status === 'DELETED')
+      return res.status(404).json({ message: 'Book not found' });
 
     if (book.status === 'SOLD') {
       const soldRoom = await roomRepo.findOne({ where: { book: { id: bookId }, status: 'SOLD' }, relations: ['buyer'] });

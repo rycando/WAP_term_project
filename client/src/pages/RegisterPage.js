@@ -10,10 +10,24 @@ const RegisterPage = () => {
   const [major, setMajor] = useState('');
   const navigate = useNavigate();
 
+  const isEmailValid = (value) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await register({ email, password, name, major });
-    navigate('/');
+    if (!email.trim() || !password.trim() || !name.trim() || !major.trim()) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
+    if (!isEmailValid(email)) {
+      alert('이메일 형식이 올바르지 않습니다.');
+      return;
+    }
+    try {
+      await register({ email, password, name, major });
+      navigate('/');
+    } catch (err) {
+      alert(err.response?.data?.message || '회원가입에 실패했습니다.');
+    }
   };
 
   return (

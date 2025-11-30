@@ -8,10 +8,25 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  const isEmailValid = (value) => /[^\s@]+@[^\s@]+\.[^\s@]+/.test(value);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password);
-    navigate('/');
+    if (!email.trim() || !password.trim()) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
+    if (!isEmailValid(email)) {
+      alert('이메일 형식이 올바르지 않습니다.');
+      return;
+    }
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      const message = err.response?.data?.message;
+      alert(message || '아이디와 비밀번호를 다시 확인해주세요.');
+    }
   };
 
   return (
