@@ -11,6 +11,15 @@ const BookDetailPage = () => {
   const { user } = useAuth();
   const [book, setBook] = useState(null);
   const [creatingRoom, setCreatingRoom] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '-'
+      : date.toLocaleDateString('ko-KR');
+  };
 
   useEffect(() => {
     api.get(`/books/${id}`).then((res) => setBook(res.data));
@@ -32,6 +41,20 @@ const BookDetailPage = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('판매 글을 삭제하시겠습니까?')) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/books/${id}`);
+      alert('판매 글이 삭제되었습니다.');
+      navigate('/');
+    } catch (err) {
+      alert('판매 글을 삭제할 수 없습니다.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (!book) return <div className="container">불러오는 중...</div>;
 
   return (
@@ -49,6 +72,7 @@ const BookDetailPage = () => {
           <div className="flex">
             <span className="pill">판매자 {book.seller?.name}</span>
             <span className="muted">출판일 {book.publishedAt}</span>
+            <span className="muted">판매자 등록일 {formatDate(book.seller?.createdAt)}</span>
           </div>
         </div>
         <p>{book.description}</p>
@@ -56,6 +80,15 @@ const BookDetailPage = () => {
           <button onClick={handleStartChat} disabled={creatingRoom}>
             {creatingRoom ? '채팅방 생성 중...' : '채팅으로 문의하기'}
           </button>
+          {user?.id === book.seller?.id && (
+            <button
+              className="danger"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? '삭제 중...' : '판매 글 삭제'}
+            </button>
+          )}
           <button className="ghost" onClick={() => navigate(-1)}>목록으로</button>
         </div>
       </div>
