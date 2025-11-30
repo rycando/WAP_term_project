@@ -87,9 +87,13 @@ const BookDetailPage = () => {
         </div>
         <p>{book.description}</p>
         <div className="flex" style={{ gap: 10 }}>
-          <button onClick={handleStartChat} disabled={creatingRoom}>
-            {creatingRoom ? '채팅방 생성 중...' : '채팅으로 문의하기'}
-          </button>
+          {book.status === 'SOLD' ? (
+            <span className="pill muted">이 책은 판매가 완료되었습니다</span>
+          ) : (
+            <button onClick={handleStartChat} disabled={creatingRoom}>
+              {creatingRoom ? '채팅방 생성 중...' : '채팅으로 문의하기'}
+            </button>
+          )}
           {user?.id === book.seller?.id && (
             <button
               className="danger"
