@@ -24,6 +24,19 @@ const ChatPage = () => {
     return new Date(date.getTime() - offset).toISOString().slice(0, 16);
   };
 
+  const getDefaultAppointmentDate = () => {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() + 30);
+    const remainder = date.getMinutes() % 15;
+    if (remainder) {
+      date.setMinutes(date.getMinutes() + (15 - remainder));
+    }
+    date.setSeconds(0, 0);
+    return date;
+  };
+
+  const getDefaultAppointmentValue = () => toInputDateTime(getDefaultAppointmentDate());
+
   const formatAppointment = (value, place) => {
     if (!value && !place) return '아직 약속이 없습니다.';
     const date = value ? new Date(value) : null;
@@ -75,12 +88,12 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (!selectedRoom) {
-      setAppointmentAt('');
+      setAppointmentAt(getDefaultAppointmentValue());
       setAppointmentPlace('');
       return;
     }
     const hasAppointment = !!(selectedRoom.appointmentAt || selectedRoom.appointmentPlace);
-    setAppointmentAt(toInputDateTime(selectedRoom.appointmentAt));
+    setAppointmentAt(hasAppointment ? toInputDateTime(selectedRoom.appointmentAt) : getDefaultAppointmentValue());
     setAppointmentPlace(selectedRoom.appointmentPlace || '');
     setAppointmentPanelOpen((prev) => ({
       ...prev,
@@ -113,22 +126,47 @@ const ChatPage = () => {
   };
 
   const handleSaveAppointment = () => {
-    const payloadAt = appointmentAt ? new Date(appointmentAt).toISOString() : null;
-    if (appointmentAt && Number.isNaN(new Date(appointmentAt).getTime())) {
-      alert('약속 시간을 다시 확인해주세요.');
-      return;
+    const parsedDate = appointmentAt ? new Date(appointmentAt) : null;
+    if (parsedDate) {
+      if (Number.isNaN(parsedDate.getTime())) {
+        alert('약속 시간을 다시 확인해주세요.');
+        return;
+      }
+      if (parsedDate.getMinutes() % 15 !== 0) {
+        alert('약속 시간은 15분 단위로 설정해주세요.');
+        return;
+      }
     }
+    const payloadAt = parsedDate ? parsedDate.toISOString() : null;
     const payloadPlace = appointmentPlace.trim() || null;
     saveAppointment(payloadAt, payloadPlace);
   };
 
   const clearAppointment = () => {
-    setAppointmentAt('');
+    setAppointmentAt(getDefaultAppointmentValue());
     setAppointmentPlace('');
     saveAppointment(null, null);
     if (selectedRoom) {
       setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: false }));
     }
+  };
+
+  const openAppointmentPanel = () => {
+    if (!selectedRoom) return;
+    const hasAppointmentNow = !!(selectedRoom.appointmentAt || selectedRoom.appointmentPlace);
+    if (!hasAppointmentNow) {
+      const nextDefault = getDefaultAppointmentValue();
+      setAppointmentAt((prev) => {
+        if (!prev) return nextDefault;
+        const prevDate = new Date(prev);
+        const nextDate = new Date(nextDefault);
+        if (Number.isNaN(prevDate.getTime()) || prevDate < nextDate) {
+          return nextDefault;
+        }
+        return prev;
+      });
+    }
+    setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: true }));
   };
 
   const currentPanelOpen = selectedRoom ? appointmentPanelOpen[selectedRoom.id] : false;
@@ -177,7 +215,7 @@ const ChatPage = () => {
             {selectedRoom && (
               <div className="flex" style={{ gap: 8 }}>
                 {!hasAppointment && !currentPanelOpen && (
-                  <button className="ghost" onClick={() => setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: true }))}>
+                  <button className="ghost" onClick={openAppointmentPanel}>
                     약속 만들기
                   </button>
                 )}
@@ -232,6 +270,7 @@ const ChatPage = () => {
                       <div className="form-grid">
                         <input
                           type="datetime-local"
+                          step={900}
                           value={appointmentAt}
                           onChange={(e) => setAppointmentAt(e.target.value)}
                           placeholder="약속 시간"
