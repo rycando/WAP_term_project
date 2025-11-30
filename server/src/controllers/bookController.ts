@@ -5,7 +5,7 @@ import { BookImage } from '../entities/BookImage';
 import axios from 'axios';
 import { User } from '../entities/User';
 
-// 책 목록 조회 (필터 + 페이징)
+// 책 목록 조회
 export const listBooks = async (req: Request, res: Response) => {
   const { keyword, major, status, page = 1, limit = 10 } = req.query as any;
   const repo = AppDataSource.getRepository(Book);
@@ -21,21 +21,14 @@ export const listBooks = async (req: Request, res: Response) => {
         kw: `%${keyword}%`,
       });
     }
-
-    if (major) {
-      qb.andWhere('seller.major = :major', { major });
-    }
-
-    if (status) {
-      qb.andWhere('book.status = :status', { status });
-    }
+    if (major) qb.andWhere('seller.major = :major', { major });
+    if (status) qb.andWhere('book.status = :status', { status });
 
     qb.skip((+page - 1) * +limit)
       .take(+limit)
       .orderBy('book.createdAt', 'DESC');
 
     const [books, count] = await qb.getManyAndCount();
-
     return res.json({ data: books, total: count });
   } catch (err) {
     return res.status(500).json({ message: 'Error fetching books', error: err });
@@ -53,7 +46,6 @@ export const getBook = async (req: Request, res: Response) => {
     });
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
-
     return res.json(book);
   } catch (err) {
     return res.status(500).json({ message: 'Error fetching book', error: err });
@@ -67,17 +59,7 @@ export const createBook = async (req: Request, res: Response) => {
   const user = req.user as User;
 
   try {
-    const {
-      isbn,
-      title,
-      author,
-      publisher,
-      publishedAt,
-      price,
-      condition,
-      description,
-      listPrice,
-    } = req.body;
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, listPrice } = req.body;
 
     const book = repo.create({
       isbn,
@@ -110,7 +92,6 @@ export const createBook = async (req: Request, res: Response) => {
 
       savedBook.images = images;
       savedBook.mainImage = images[0]?.url ?? null;
-
       await repo.save(savedBook);
     }
 
@@ -133,21 +114,9 @@ export const updateBook = async (req: Request, res: Response) => {
     });
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
-    if (book.seller.id !== user.id)
-      return res.status(403).json({ message: 'Forbidden' });
+    if (book.seller.id !== user.id) return res.status(403).json({ message: 'Forbidden' });
 
-    const {
-      isbn,
-      title,
-      author,
-      publisher,
-      publishedAt,
-      price,
-      condition,
-      description,
-      status,
-      listPrice,
-    } = req.body;
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, status, listPrice } = req.body;
 
     Object.assign(book, {
       isbn,
@@ -200,8 +169,7 @@ export const deleteBook = async (req: Request, res: Response) => {
     });
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
-    if (book.seller.id !== user.id)
-      return res.status(403).json({ message: 'Forbidden' });
+    if (book.seller.id !== user.id) return res.status(403).json({ message: 'Forbidden' });
 
     book.status = 'OFF';
     await repo.save(book);
@@ -212,33 +180,44 @@ export const deleteBook = async (req: Request, res: Response) => {
   }
 };
 
-// ISBN 검색
+// ISBN 검색 (fallback 포함)
 export const searchByIsbn = async (req: Request, res: Response) => {
   const { isbn } = req.params;
 
   try {
-    const response = await axios.get(
-      'https://openapi.naver.com/v1/search/book.json',
-      {
-        params: { query: isbn, d_isbn: isbn },
-        headers: {
-          'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
-          'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
-        },
-      }
-    );
+    const headers = {
+      'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
+      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
+    };
 
-    const item = response.data.items?.[0];
+    // 공통 검색 함수
+    const callSearch = async (params: Record<string, string>) => {
+      const result = await axios.get('https://openapi.naver.com/v1/search/book.json', {
+        params,
+        headers,
+      });
+      return result.data.items?.[0] ?? null;
+    };
 
+    // 1) ISBN 직접 검색
+    const isbnResult = await callSearch({ d_isbn: isbn });
+
+    // 2) price가 없으면 query로 재검색
+    const needsFallback = !isbnResult?.price;
+    const queryResult = needsFallback ? await callSearch({ query: isbn }) : null;
+
+    const item = isbnResult || queryResult;
     if (!item) return res.status(404).json({ message: 'Not found' });
 
+    const source = item?.price ? item : queryResult ?? isbnResult;
+
     const normalized = {
-      title: item.title?.replace(/<[^>]*>/g, ''),
-      author: item.author,
-      publisher: item.publisher,
-      publishedAt: item.pubdate,
-      image: item.image,
-      listPrice: item.price ? Number(item.price) : null,
+      title: source?.title?.replace(/<[^>]*>/g, ''),
+      author: source?.author,
+      publisher: source?.publisher,
+      publishedAt: source?.pubdate,
+      image: source?.image,
+      listPrice: source?.price ? Number(source.price) : null,
     };
 
     return res.json(normalized);
