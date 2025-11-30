@@ -68,7 +68,30 @@ const BookDetailPage = () => {
           <span className="chip">상태 {book.condition}</span>
         </div>
         <div className="section-heading">
-          <span className="price">₩{Number(book.price).toLocaleString()}</span>
+          <div className="stack" style={{ gap: 4 }}>
+            {book.listPrice != null && (
+              <span className="muted" style={{ textDecoration: 'line-through' }}>
+                정가(네이버 판매가) ₩{Number(book.listPrice).toLocaleString()}
+              </span>
+            )}
+            <span className="price">₩{Number(book.price).toLocaleString()}</span>
+            {book.listPrice != null && book.price && (
+              <span
+                className="chip"
+                style={{
+                  background: 'var(--primary-100)',
+                  color: 'var(--primary-800)',
+                  width: 'fit-content'
+                }}
+              >
+                {Math.max(
+                  0,
+                  Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100)
+                )}
+                % 할인
+              </span>
+            )}
+          </div>
           <div className="flex">
             <span className="pill">판매자 {book.seller?.name}</span>
             <span className="muted">출판일 {book.publishedAt}</span>

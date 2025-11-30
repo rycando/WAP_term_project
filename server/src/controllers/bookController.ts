@@ -287,13 +287,16 @@ export const searchByIsbn = async (req: Request, res: Response) => {
     // 가격 있으면 그걸 우선 사용
     const source = item?.price ? item : queryResult || isbnResult;
 
+    const salePrice = source.price ? Number(source.price) : null;
+
     const normalized = {
       title: source.title?.replace(/<[^>]*>/g, ''),
       author: source.author,
       publisher: source.publisher,
       publishedAt: source.pubdate,
       image: source.image,
-      listPrice: source.price ? Number(source.price) : null,
+      listPrice: salePrice,
+      salePrice,
     };
 
     return res.json(normalized);
