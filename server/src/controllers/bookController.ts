@@ -279,7 +279,7 @@ export const searchByIsbn = async (req: Request, res: Response) => {
       publisher: item.publisher,
       publishedAt: item.pubdate,
       image: item.image,
-      listPrice: item.price ? Number(item.price) : null,
+      listPrice: item.price ? Number(item.price) : (item.discount ? Number(item.discount) : null),
     };
     return res.json(normalized);
   } catch (err) {
