@@ -1,0 +1,14 @@
+{
+  "name": "campusbook-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "cd server && npm install && cd ../client && npm install",
+    "start": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
