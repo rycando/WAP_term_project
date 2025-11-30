@@ -279,6 +279,7 @@ export const searchByIsbn = async (req: Request, res: Response) => {
       publisher: item.publisher,
       publishedAt: item.pubdate,
       image: item.image,
+      listPrice: item.price ? Number(item.price) : null,
     };
     return res.json(normalized);
   } catch (err) {
