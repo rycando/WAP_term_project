@@ -17,7 +17,8 @@ export const listBooks = async (req: Request, res: Response) => {
     const qb = repo
       .createQueryBuilder('book')
       .leftJoinAndSelect('book.seller', 'seller')
-      .leftJoinAndSelect('book.images', 'images');
+      .leftJoinAndSelect('book.images', 'images')
+      .andWhere('book.status != :deleted', { deleted: 'DELETED' });
 
     if (keyword) {
       qb.andWhere('(book.title LIKE :kw OR book.description LIKE :kw)', {
@@ -73,7 +74,8 @@ export const getBook = async (req: Request, res: Response) => {
       relations: ['images', 'seller'],
     });
 
-    if (!book) return res.status(404).json({ message: 'Book not found' });
+    if (!book || book.status === 'DELETED')
+      return res.status(404).json({ message: 'Book not found' });
 
     const { password: _pw, ...sellerSafe } = book.seller || ({} as User);
 
@@ -242,10 +244,10 @@ export const deleteBook = async (req: Request, res: Response) => {
     if (book.seller.id !== user.id)
       return res.status(403).json({ message: 'Forbidden' });
 
-    book.status = 'OFF';
+    book.status = 'DELETED';
     await repo.save(book);
 
-    return res.json({ message: 'Book deactivated' });
+    return res.json({ message: 'Book removed' });
   } catch (err) {
     return res.status(500).json({ message: 'Error deleting book', error: err });
   }

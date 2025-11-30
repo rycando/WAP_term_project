@@ -103,6 +103,10 @@ const ChatPage = () => {
   }, [selectedRoom, isSeller]);
 
   const sendMessage = async () => {
+    if (!text.trim()) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
     await api.post('/chat/messages', { roomId: selectedRoom.id, message: text });
     setText('');
     const res = await api.get('/chat/messages', { params: { roomId: selectedRoom.id } });

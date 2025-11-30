@@ -10,8 +10,17 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password);
-    navigate('/');
+    if (!email.trim() || !password.trim()) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      const message = err.response?.data?.message;
+      alert(message || '아이디나 비밀번호가 일치하지 않습니다.');
+    }
   };
 
   return (

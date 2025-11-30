@@ -43,6 +43,12 @@ const NewBookPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const requiredFields = ['isbn', 'title', 'author', 'publisher', 'publishedAt', 'price', 'description'];
+    const hasEmpty = requiredFields.some((field) => !String(form[field]).trim());
+    if (hasEmpty) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
     setSubmitting(true);
 
     try {
@@ -151,19 +157,19 @@ const NewBookPage = () => {
             <option value="C">C · 사용감 많음</option>
           </select>
 
-          {/* 판매가 */}
-          <input
-            name="price"
-            placeholder={pricePlaceholder()}
-            value={form.price}
-            onChange={handleChange}
-          />
-
           {/* 정가 */}
           <input
             name="listPrice"
             placeholder="정가 (네이버 자동입력)"
             value={form.listPrice}
+            onChange={handleChange}
+          />
+
+          {/* 판매가 */}
+          <input
+            name="price"
+            placeholder={pricePlaceholder()}
+            value={form.price}
             onChange={handleChange}
           />
         </div>
