@@ -46,8 +46,9 @@ export class Book {
   @Column('text')
   description!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   mainImage!: string | null;
+
 
   @Column({ default: 'ON' })
   status!: string;
