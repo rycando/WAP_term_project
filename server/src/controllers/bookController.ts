@@ -266,6 +266,10 @@ export const searchByIsbn = async (req: Request, res: Response) => {
     });
     const item = response.data.items?.[0];
     if (!item) return res.status(404).json({ message: 'Not found' });
+    const listPrice =
+      item.price && Number(item.price) > 0
+        ? Number(item.price)
+        : null;
     const normalized = {
       title: item.title?.replace(/<[^>]*>/g, ''),
       author: item.author,
