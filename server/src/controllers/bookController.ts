@@ -259,45 +259,37 @@ export const searchByIsbn = async (req: Request, res: Response) => {
 
   try {
     const headers = {
-      'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
-      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
+      "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID || "",
+      "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET || "",
     };
 
-    // 공통 요청 함수
-    const callSearch = async (params: Record<string, string>) => {
-      const response = await axios.get(
-        'https://openapi.naver.com/v1/search/book.json',
-        { params, headers }
-      );
-      return response.data.items?.[0] ?? null;
-    };
+    // ISBN은 d_isbn만 쓰는 게 가장 안정적임
+    const response = await axios.get(
+      "https://openapi.naver.com/v1/search/book.json",
+      {
+        params: { d_isbn: isbn },
+        headers,
+      }
+    );
 
-    // 1차: d_isbn 조회
-    const isbnResult = await callSearch({ d_isbn: isbn });
+    const item = response.data.items?.[0];
 
-    // 가격이 없으면 fallback
-    const needsFallback = !isbnResult?.price;
-
-    // 2차: query 조회
-    const queryResult = needsFallback ? await callSearch({ query: isbn }) : null;
-
-    const item = isbnResult || queryResult;
-    if (!item) return res.status(404).json({ message: 'Not found' });
-
-    // 가격 있으면 그걸 우선 사용
-    const source = item?.price ? item : queryResult || isbnResult;
+    if (!item) {
+      return res.status(404).json({ message: "Not found" });
+    }
 
     const normalized = {
-      title: source.title?.replace(/<[^>]*>/g, ''),
-      author: source.author,
-      publisher: source.publisher,
-      publishedAt: source.pubdate,
-      image: source.image,
-      listPrice: source.price ? Number(source.price) : null,
+      title: item.title?.replace(/<[^>]*>/g, ""),
+      author: item.author,
+      publisher: item.publisher,
+      publishedAt: item.pubdate,
+      image: item.image,
+      listPrice: item.price ? Number(item.price) : null, // 판매가 그대로 사용
     };
 
     return res.json(normalized);
   } catch (err) {
-    return res.status(500).json({ message: 'Error calling Naver API', error: err });
+    return res.status(500).json({ message: "Error calling Naver API", error: err });
   }
 };
+
