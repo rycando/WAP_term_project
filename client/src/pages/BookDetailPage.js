@@ -78,7 +78,7 @@ const BookDetailPage = () => {
           <span className="chip">상태 {book.condition}</span>
         </div>
         <div className="section-heading">
-          <span className="price">₩{Number(book.price).toLocaleString()}</span>
+          <span className="price">{Number(book.price).toLocaleString()}원</span>
           <div className="flex">
             <span className="pill">판매자 {book.seller?.name}</span>
             <span className="muted">출판일 {book.publishedAt}</span>

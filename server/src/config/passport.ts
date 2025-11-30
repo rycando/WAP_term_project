@@ -13,11 +13,11 @@ passport.use(
     try {
       const user = await userRepository().findOne({ where: { email } });
       if (!user) {
-        return done(null, false, { message: 'Invalid credentials' });
+        return done(null, false, { message: '아이디와 비밀번호를 확인해주세요.' });
       }
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
-        return done(null, false, { message: 'Invalid credentials' });
+        return done(null, false, { message: '아이디와 비밀번호를 확인해주세요.' });
       }
       return done(null, user);
     } catch (err) {
