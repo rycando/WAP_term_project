@@ -44,7 +44,6 @@ const NewBookPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-
     try {
       const data = new FormData();
       Object.entries(form).forEach(([key, value]) => data.append(key, value));
@@ -62,7 +61,6 @@ const NewBookPage = () => {
 
   const handleIsbnSearch = async () => {
     if (!form.isbn) return;
-
     setSearching(true);
     try {
       const res = await api.get(`/books/isbn/${form.isbn}`);
@@ -151,12 +149,12 @@ const NewBookPage = () => {
           {/* 정가 */}
           <input
             name="listPrice"
-            placeholder="정가 (네이버 자동입력)"
+            placeholder="정가"
             value={form.listPrice}
             onChange={handleChange}
           />
 
-          {/* 상태 */}
+          {/* 상태 선택 */}
           <select
             name="condition"
             value={form.condition}
@@ -169,7 +167,6 @@ const NewBookPage = () => {
           </select>
         </div>
 
-        {/* 설명 */}
         <textarea
           name="description"
           placeholder="책에 대한 설명을 추가하세요"
