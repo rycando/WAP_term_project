@@ -256,40 +256,26 @@ export const deleteBook = async (req: Request, res: Response) => {
  * ----------------------------- */
 export const searchByIsbn = async (req: Request, res: Response) => {
   const { isbn } = req.params;
-
   try {
-    const headers = {
-      "X-Naver-Client-Id": process.env.NAVER_CLIENT_ID || "",
-      "X-Naver-Client-Secret": process.env.NAVER_CLIENT_SECRET || "",
-    };
-
-    // ISBN은 d_isbn만 쓰는 게 가장 안정적임
-    const response = await axios.get(
-      "https://openapi.naver.com/v1/search/book.json",
-      {
-        params: { d_isbn: isbn },
-        headers,
-      }
-    );
-
+    const response = await axios.get('https://openapi.naver.com/v1/search/book.json', {
+      params: { query: isbn, d_isbn: isbn },
+      headers: {
+        'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
+        'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
+      },
+    });
     const item = response.data.items?.[0];
-
-    if (!item) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
+    if (!item) return res.status(404).json({ message: 'Not found' });
     const normalized = {
-      title: item.title?.replace(/<[^>]*>/g, ""),
+      title: item.title?.replace(/<[^>]*>/g, ''),
       author: item.author,
       publisher: item.publisher,
       publishedAt: item.pubdate,
       image: item.image,
-      listPrice: item.price ? Number(item.price) : null, // 판매가 그대로 사용
     };
-
     return res.json(normalized);
   } catch (err) {
-    return res.status(500).json({ message: "Error calling Naver API", error: err });
+    return res.status(500).json({ message: 'Error calling Naver API', error: err });
   }
 };
 
