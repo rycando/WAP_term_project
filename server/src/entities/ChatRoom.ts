@@ -28,6 +28,12 @@ export class ChatRoom {
   @Column({ default: 'OPEN' })
   status!: string;
 
+  @Column({ type: 'datetime', nullable: true })
+  appointmentAt!: Date | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  appointmentPlace!: string | null;
+
   @OneToMany(() => ChatMessage, (message) => message.room)
   messages!: ChatMessage[];
 

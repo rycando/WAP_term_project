@@ -19,35 +19,44 @@ const PrivateRoute = ({ children }) => {
 function App() {
   const { user, logout } = useAuth();
   return (
-    <div>
-      <nav>
-        <Link to="/">캠퍼스북</Link>
-        <Link to="/books/new">판매등록</Link>
-        <Link to="/chat">채팅</Link>
-        <Link to="/keywords">키워드</Link>
-        {user ? (
-          <>
-            <span style={{ marginLeft: 'auto' }}>{user.name}</span>
-            <button onClick={logout}>로그아웃</button>
-            <Link to="/me">마이페이지</Link>
-          </>
-        ) : (
-          <>
-            <Link to="/login">로그인</Link>
-            <Link to="/register">회원가입</Link>
-          </>
-        )}
+    <div className="app-shell">
+      <nav className="top-nav">
+        <div className="nav-links">
+          <Link to="/" className="brand">캠퍼스북</Link>
+          <span className="badge">전공서 마켓</span>
+        </div>
+        <div className="nav-links">
+          <Link className="pill" to="/books/new">판매등록</Link>
+          <Link className="pill" to="/chat">채팅</Link>
+          <Link className="pill" to="/keywords">키워드</Link>
+        </div>
+        <div className="nav-actions">
+          {user ? (
+            <>
+              <span className="chip">{user.name}</span>
+              <button className="ghost" onClick={logout}>로그아웃</button>
+              <Link className="pill" to="/me">마이페이지</Link>
+            </>
+          ) : (
+            <>
+              <Link className="pill" to="/login">로그인</Link>
+              <Link className="pill" to="/register">회원가입</Link>
+            </>
+          )}
+        </div>
       </nav>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/books/new" element={<PrivateRoute><NewBookPage /></PrivateRoute>} />
-        <Route path="/books/:id" element={<BookDetailPage />} />
-        <Route path="/me" element={<PrivateRoute><MyPage /></PrivateRoute>} />
-        <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
-        <Route path="/keywords" element={<PrivateRoute><KeywordsPage /></PrivateRoute>} />
-      </Routes>
+      <main className="page">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/books/new" element={<PrivateRoute><NewBookPage /></PrivateRoute>} />
+          <Route path="/books/:id" element={<BookDetailPage />} />
+          <Route path="/me" element={<PrivateRoute><MyPage /></PrivateRoute>} />
+          <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+          <Route path="/keywords" element={<PrivateRoute><KeywordsPage /></PrivateRoute>} />
+        </Routes>
+      </main>
     </div>
   );
 }

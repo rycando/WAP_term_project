@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 services:
   db:
     image: mysql:8
@@ -9,13 +9,20 @@ services:
       MYSQL_USER: campusbook
       MYSQL_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
   server:
     build: ./server
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       DB_HOST: db
       DB_PORT: 3306
@@ -23,8 +30,8 @@ services:
       DB_PASSWORD: password
       DB_NAME: campusbook
       SESSION_SECRET: supersecret
-      NAVER_CLIENT_ID: your_client_id
-      NAVER_CLIENT_SECRET: your_client_secret
+      NAVER_CLIENT_ID: 4V2LuQn3PgIogfms_vGz
+      NAVER_CLIENT_SECRET: 3C9tXtwoeD
     ports:
       - "4000:4000"
     volumes:

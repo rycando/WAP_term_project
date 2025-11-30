@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
-import path from 'path';
 import passport from './config/passport';
 import authRoutes from './routes/authRoutes';
 import bookRoutes from './routes/bookRoutes';
 import chatRoutes from './routes/chatRoutes';
 import keywordRoutes from './routes/keywordRoutes';
 import alertsRoutes from './routes/alertsRoutes';
+import { uploadsDir } from './config/paths';
 
 const app = express();
 
@@ -31,7 +31,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);

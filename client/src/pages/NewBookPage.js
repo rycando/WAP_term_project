@@ -9,11 +9,13 @@ const NewBookPage = () => {
     publisher: '',
     publishedAt: '',
     price: '',
-    condition: '',
+    condition: 'A',
     description: '',
   });
   const [images, setImages] = useState([]);
   const [lookupResult, setLookupResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,35 +23,63 @@ const NewBookPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData();
-    Object.entries(form).forEach(([key, value]) => data.append(key, value));
-    images.forEach((file) => data.append('images', file));
-    await api.post('/books', data, { headers: { 'Content-Type': 'multipart/form-data' } });
-    alert('등록되었습니다');
+    setSubmitting(true);
+    try {
+      const data = new FormData();
+      Object.entries(form).forEach(([key, value]) => data.append(key, value));
+      images.forEach((file) => data.append('images', file));
+      await api.post('/books', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+      alert('등록되었습니다');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleIsbnSearch = async () => {
-    const res = await api.get(`/books/isbn/${form.isbn}`);
-    setLookupResult(res.data);
-    setForm((prev) => ({ ...prev, ...res.data }));
+    if (!form.isbn) return;
+    setSearching(true);
+    try {
+      const res = await api.get(`/books/isbn/${form.isbn}`);
+      setLookupResult(res.data);
+      setForm((prev) => ({ ...prev, ...res.data }));
+    } catch (err) {
+      alert('ISBN 검색 결과가 없습니다.');
+    } finally {
+      setSearching(false);
+    }
   };
 
   return (
-    <div className="container">
-      <h2>책 등록</h2>
-      <button onClick={handleIsbnSearch}>ISBN 검색</button>
-      {lookupResult && <p>검색 결과: {lookupResult.title}</p>}
-      <form onSubmit={handleSubmit}>
-        <input name="isbn" placeholder="ISBN" value={form.isbn} onChange={handleChange} />
-        <input name="title" placeholder="제목" value={form.title} onChange={handleChange} />
-        <input name="author" placeholder="저자" value={form.author} onChange={handleChange} />
-        <input name="publisher" placeholder="출판사" value={form.publisher} onChange={handleChange} />
-        <input name="publishedAt" placeholder="출판일" value={form.publishedAt} onChange={handleChange} />
-        <input name="price" placeholder="가격" value={form.price} onChange={handleChange} />
-        <input name="condition" placeholder="상태" value={form.condition} onChange={handleChange} />
-        <textarea name="description" placeholder="설명" value={form.description} onChange={handleChange} />
+    <div className="container stack">
+      <div className="section-heading">
+        <div>
+          <h2>책 등록</h2>
+          <p>ISBN을 검색해 빠르게 채우고, 상태 등급을 선택해 주세요.</p>
+        </div>
+        <button type="button" onClick={handleIsbnSearch} disabled={!form.isbn || searching}>
+          {searching ? '검색 중...' : 'ISBN 자동 채우기'}
+        </button>
+      </div>
+      {lookupResult && <div className="chip">검색 결과: {lookupResult.title}</div>}
+
+      <form className="card stack" onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <input name="isbn" placeholder="ISBN" value={form.isbn} onChange={handleChange} />
+          <input name="title" placeholder="제목" value={form.title} onChange={handleChange} />
+          <input name="author" placeholder="저자" value={form.author} onChange={handleChange} />
+          <input name="publisher" placeholder="출판사" value={form.publisher} onChange={handleChange} />
+          <input name="publishedAt" placeholder="출판일" value={form.publishedAt} onChange={handleChange} />
+          <input name="price" placeholder="가격" value={form.price} onChange={handleChange} />
+          <select name="condition" value={form.condition} onChange={handleChange}>
+            <option value="S">S · 새 책 수준</option>
+            <option value="A">A · 사용감 적음</option>
+            <option value="B">B · 보통</option>
+            <option value="C">C · 사용감 많음</option>
+          </select>
+        </div>
+        <textarea name="description" placeholder="책에 대한 설명을 추가하세요" value={form.description} onChange={handleChange} />
         <input type="file" multiple onChange={(e) => setImages(Array.from(e.target.files || []))} />
-        <button type="submit">등록</button>
+        <button type="submit" disabled={submitting}>{submitting ? '등록 중...' : '등록'}</button>
       </form>
     </div>
   );

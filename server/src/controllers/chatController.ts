@@ -75,3 +75,36 @@ export const listMessages = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Error fetching messages', error: err });
   }
 };
+
+// 이 함수는 채팅방 약속 정보를 생성/수정한다.
+export const upsertAppointment = async (req: Request, res: Response) => {
+  const { appointmentAt, appointmentPlace } = req.body;
+  const roomId = Number(req.params.id ?? req.body.roomId);
+  const user = req.user as User;
+  try {
+    if (!roomId) return res.status(400).json({ message: 'roomId is required' });
+    const roomRepo = AppDataSource.getRepository(ChatRoom);
+    const room = await roomRepo.findOne({ where: { id: roomId }, relations: ['seller', 'buyer', 'book'] });
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.seller.id !== user.id && room.buyer.id !== user.id) {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
+    let parsedDate: Date | null = null;
+    if (appointmentAt) {
+      parsedDate = new Date(appointmentAt);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid appointmentAt' });
+      }
+    }
+
+    room.appointmentAt = parsedDate;
+    room.appointmentPlace = appointmentPlace || null;
+    await roomRepo.save(room);
+
+    const updated = await roomRepo.findOne({ where: { id: room.id }, relations: ['book', 'seller', 'buyer'] });
+    return res.json(updated);
+  } catch (err) {
+    return res.status(500).json({ message: 'Error updating appointment', error: err });
+  }
+};
