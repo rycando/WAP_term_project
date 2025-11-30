@@ -106,8 +106,8 @@ export const upsertAppointment = async (req: Request, res: Response) => {
     const bookRepo = AppDataSource.getRepository(Book);
     const room = await roomRepo.findOne({ where: { id: roomId }, relations: ['seller', 'buyer', 'book'] });
     if (!room) return res.status(404).json({ message: 'Room not found' });
-    if (room.seller.id !== user.id && room.buyer.id !== user.id) {
-      return res.status(403).json({ message: 'Not allowed' });
+    if (room.seller.id !== user.id) {
+      return res.status(403).json({ message: 'Only the seller can manage appointments' });
     }
 
     let parsedDate: Date | null = null;

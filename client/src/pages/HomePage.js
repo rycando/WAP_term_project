@@ -8,10 +8,12 @@ const HomePage = () => {
   const [alerts, setAlerts] = useState([]);
   const { user } = useAuth();
 
+  // 전체 책 불러오기
   useEffect(() => {
     api.get('/books').then((res) => setBooks(res.data.data));
   }, []);
 
+  // 키워드 알림 불러오기
   useEffect(() => {
     if (user) {
       api.get('/alerts').then((res) => setAlerts(res.data));
@@ -20,6 +22,7 @@ const HomePage = () => {
 
   return (
     <div className="container stack">
+      {/* 상단 안내 카드 */}
       <div className="card">
         <div className="section-heading">
           <div>
@@ -32,47 +35,123 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* 최근 등록 */}
       <div className="section-heading">
         <h3>최근 등록</h3>
         <span className="muted">{books.length}권</span>
       </div>
+
+      {/* 책 목록 */}
       <div className="grid">
         {books.map((book) => (
-          <Link key={book.id} to={`/books/${book.id}`} className="card" style={{ textDecoration: 'none' }}>
+          <Link
+            key={book.id}
+            to={`/books/${book.id}`}
+            className="card"
+            style={{ textDecoration: 'none' }}
+          >
             <div className="section-heading">
               <div className="flex" style={{ gap: 10, alignItems: 'center' }}>
-                <h3 style={{ margin: 0, textDecoration: book.status !== 'ON' ? 'line-through' : 'none' }}>{book.title}</h3>
-                {book.status !== 'ON' && <span className="chip danger">판매완료</span>}
+                <h3
+                  style={{
+                    margin: 0,
+                    textDecoration: book.status !== 'ON' ? 'line-through' : 'none'
+                  }}
+                >
+                  {book.title}
+                </h3>
+
+                {book.status !== 'ON' && (
+                  <span className="chip danger">판매완료</span>
+                )}
               </div>
               <span className="chip">상태 {book.condition || '-'}</span>
             </div>
-            <p>{book.author} · {book.publisher}</p>
+
+            <p>
+              {book.author} · {book.publisher}
+            </p>
+
+            {/* 가격 표시 (정가 + 현재가 + 할인율) */}
             <div className="section-heading">
-              <span
-                className="price"
-                style={{ textDecoration: book.status !== 'ON' ? 'line-through' : 'none', color: book.status !== 'ON' ? 'var(--muted)' : undefined }}
-              >
-                ₩{Number(book.price).toLocaleString()}
-              </span>
+              <div className="stack" style={{ gap: 4 }}>
+                {/* 정가 */}
+                {book.listPrice && (
+                  <span
+                    className="muted"
+                    style={{ textDecoration: 'line-through' }}
+                  >
+                    정가 ₩{Number(book.listPrice).toLocaleString()}
+                  </span>
+                )}
+
+                {/* 판매가 + 할인 퍼센트 */}
+                <div className="flex" style={{ gap: 8, alignItems: 'baseline' }}>
+                  <span
+                    className="price"
+                    style={{
+                      textDecoration:
+                        book.status !== 'ON' ? 'line-through' : 'none',
+                      color:
+                        book.status !== 'ON' ? 'var(--muted)' : undefined
+                    }}
+                  >
+                    ₩{Number(book.price).toLocaleString()}
+                  </span>
+
+                  {book.listPrice && book.price && (
+                    <span
+                      className="chip"
+                      style={{
+                        background: 'var(--primary-100)',
+                        color: 'var(--primary-800)'
+                      }}
+                    >
+                      {Math.max(
+                        0,
+                        Math.round(
+                          (1 - Number(book.price) / Number(book.listPrice)) * 100
+                        )
+                      )}
+                      % 할인
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 출판일 */}
               <span className="muted">{book.publishedAt}</span>
             </div>
           </Link>
         ))}
-        {books.length === 0 && <div className="card">아직 등록된 도서가 없습니다.</div>}
+
+        {/* 책 없음 */}
+        {books.length === 0 && (
+          <div className="card">아직 등록된 도서가 없습니다.</div>
+        )}
       </div>
 
+      {/* 키워드 알림 */}
       {user && (
         <div className="card stack">
           <div className="section-heading">
             <h3>키워드 알림</h3>
-            <span className="muted">{alerts.length ? `${alerts.length}건 도착` : '알림 없음'}</span>
+            <span className="muted">
+              {alerts.length ? `${alerts.length}건 도착` : '알림 없음'}
+            </span>
           </div>
+
           {alerts.map((book) => (
             <Link key={book.id} to={`/books/${book.id}`} className="pill">
               {book.title}
             </Link>
           ))}
-          {!alerts.length && <p className="muted">등록한 키워드와 맞는 새 책이 올라오면 알려드릴게요.</p>}
+
+          {!alerts.length && (
+            <p className="muted">
+              등록한 키워드와 맞는 새 책이 올라오면 알려드릴게요.
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -37,6 +37,9 @@ export class Book {
   @Column('decimal')
   price!: number;
 
+  @Column('decimal', { nullable: true })
+  listPrice!: number | null;
+
   @Column()
   condition!: string;
 
