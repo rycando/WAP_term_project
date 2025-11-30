@@ -5,6 +5,7 @@ import { BookImage } from '../entities/BookImage';
 import axios from 'axios';
 import { User } from '../entities/User';
 import { normalizeUploadPath } from '../utils/uploads';
+import { ChatRoom } from '../entities/ChatRoom';
 
 /* -----------------------------
  *  책 목록 조회 (필터 + 페이징)
@@ -40,15 +41,20 @@ export const listBooks = async (req: Request, res: Response) => {
     const [books, count] = await qb.getManyAndCount();
 
     // 이미지 경로 정규화
-    const normalizedBooks = books.map((book) => ({
-      ...book,
-      mainImage: normalizeUploadPath(book.mainImage),
-      images:
-        book.images?.map((img) => ({
-          ...img,
-          url: normalizeUploadPath(img.url),
-        })) ?? [],
-    }));
+    const normalizedBooks = books.map((book) => {
+      const { password: _pw, ...sellerSafe } = book.seller || ({} as User);
+
+      return {
+        ...book,
+        seller: sellerSafe,
+        mainImage: normalizeUploadPath(book.mainImage),
+        images:
+          book.images?.map((img) => ({
+            ...img,
+            url: normalizeUploadPath(img.url),
+          })) ?? [],
+      };
+    });
 
     return res.json({ data: normalizedBooks, total: count });
   } catch (err) {
@@ -70,6 +76,8 @@ export const getBook = async (req: Request, res: Response) => {
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
 
+    const { password: _pw, ...sellerSafe } = book.seller || ({} as User);
+
     // 경로 정규화
     book.mainImage = normalizeUploadPath(book.mainImage) as any;
     book.images = book.images?.map((img) => ({
@@ -77,7 +85,7 @@ export const getBook = async (req: Request, res: Response) => {
       url: normalizeUploadPath(img.url),
     })) as any;
 
-    return res.json(book);
+    return res.json({ ...book, seller: sellerSafe });
   } catch (err) {
     return res.status(500).json({ message: 'Error fetching book', error: err });
   }
@@ -235,10 +243,14 @@ export const deleteBook = async (req: Request, res: Response) => {
     if (book.seller.id !== user.id)
       return res.status(403).json({ message: 'Forbidden' });
 
-    book.status = 'OFF';
-    await repo.save(book);
+    const roomRepo = AppDataSource.getRepository(ChatRoom);
 
-    return res.json({ message: 'Book deactivated' });
+    // 판매 글과 연관된 채팅방/메시지를 먼저 삭제
+    await roomRepo.delete({ book: { id: book.id } });
+
+    await repo.remove(book);
+
+    return res.json({ message: 'Book deleted' });
   } catch (err) {
     return res.status(500).json({ message: 'Error deleting book', error: err });
   }
@@ -280,13 +292,16 @@ export const searchByIsbn = async (req: Request, res: Response) => {
     // 가격 있으면 그걸 우선 사용
     const source = item?.price ? item : queryResult || isbnResult;
 
+    const salePrice = source.price ? Number(source.price) : null;
+
     const normalized = {
       title: source.title?.replace(/<[^>]*>/g, ''),
       author: source.author,
       publisher: source.publisher,
       publishedAt: source.pubdate,
       image: source.image,
-      listPrice: source.price ? Number(source.price) : null,
+      listPrice: salePrice,
+      salePrice,
     };
 
     return res.json(normalized);

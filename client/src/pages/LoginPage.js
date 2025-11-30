@@ -10,8 +10,22 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(email, password);
-    navigate('/');
+
+    if (!email.trim() || !password.trim()) {
+      alert('아직 빈 칸이 있습니다. 모든 칸을 입력해 주세요.');
+      return;
+    }
+
+    try {
+      await login(email, password);
+      navigate('/');
+    } catch (err) {
+      if (err.response?.status === 400 || err.response?.status === 401) {
+        alert('아이디나 비밀번호가 일치하지 않습니다.');
+      } else {
+        alert('로그인에 실패했습니다.');
+      }
+    }
   };
 
   return (

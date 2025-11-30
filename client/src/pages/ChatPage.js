@@ -103,10 +103,19 @@ const ChatPage = () => {
   }, [selectedRoom, isSeller]);
 
   const sendMessage = async () => {
-    await api.post('/chat/messages', { roomId: selectedRoom.id, message: text });
-    setText('');
-    const res = await api.get('/chat/messages', { params: { roomId: selectedRoom.id } });
-    setMessages(res.data);
+    if (!text.trim()) {
+      alert('아직 빈 칸이 있습니다. 메시지를 입력해 주세요.');
+      return;
+    }
+
+    try {
+      await api.post('/chat/messages', { roomId: selectedRoom.id, message: text });
+      setText('');
+      const res = await api.get('/chat/messages', { params: { roomId: selectedRoom.id } });
+      setMessages(res.data);
+    } catch (err) {
+      alert('메시지를 보낼 수 없습니다. 다시 시도해주세요.');
+    }
   };
 
   const saveAppointment = async (nextAt, nextPlace) => {

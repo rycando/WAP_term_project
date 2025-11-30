@@ -21,8 +21,9 @@ const NewBookPage = () => {
 
   // 자동 가격 제안 계산
   const getSuggestedPrice = () => {
-    if (!form.listPrice) return null;
-    const base = Number(form.listPrice);
+    const baseValue = form.listPrice || lookupResult?.salePrice;
+    if (!baseValue) return null;
+    const base = Number(baseValue);
     if (Number.isNaN(base)) return null;
 
     const ratioMap = { S: 0.8, A: 0.65, B: 0.5, C: 0.4 };
@@ -33,7 +34,7 @@ const NewBookPage = () => {
 
   const pricePlaceholder = () => {
     const suggested = getSuggestedPrice();
-    if (!suggested) return '가격제안 : -원';
+    if (!suggested) return '가격제안 : -원 (판매가 정보를 입력하거나 불러주세요)';
     return `가격제안 : ${suggested.toLocaleString()}원`;
   };
 
@@ -43,6 +44,14 @@ const NewBookPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const required = ['isbn', 'title', 'author', 'publisher', 'publishedAt', 'price', 'description'];
+    const hasEmpty = required.some((key) => !String(form[key] || '').trim());
+    if (hasEmpty) {
+      alert('아직 빈 칸이 있습니다. 필수 항목을 모두 입력해 주세요.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -55,6 +64,8 @@ const NewBookPage = () => {
       });
 
       alert('등록되었습니다');
+    } catch (err) {
+      alert(err.response?.data?.message || '등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setSubmitting(false);
     }
@@ -151,6 +162,14 @@ const NewBookPage = () => {
             <option value="C">C · 사용감 많음</option>
           </select>
 
+          {/* 정가 */}
+          <input
+            name="listPrice"
+            placeholder="정가/판매가 (네이버 자동입력)"
+            value={form.listPrice}
+            onChange={handleChange}
+          />
+
           {/* 판매가 */}
           <input
             name="price"
@@ -158,15 +177,15 @@ const NewBookPage = () => {
             value={form.price}
             onChange={handleChange}
           />
-
-          {/* 정가 */}
-          <input
-            name="listPrice"
-            placeholder="정가 (네이버 자동입력)"
-            value={form.listPrice}
-            onChange={handleChange}
-          />
         </div>
+
+        {lookupResult?.salePrice && (
+          <div className="muted">
+            네이버 판매가 기준 정가: ₩{Number(lookupResult.salePrice).toLocaleString()} ·
+            상태 {form.condition}일 때 제안가 약 {getSuggestedPrice()?.toLocaleString() || '-'}원
+            (S 80% / A 65% / B 50% / C 40%)
+          </div>
+        )}
 
         <textarea
           name="description"
