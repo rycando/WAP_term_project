@@ -11,7 +11,7 @@ export const register = async (req: Request, res: Response) => {
     const repo = AppDataSource.getRepository(User);
     const existing = await repo.findOne({ where: { email } });
     if (existing) {
-      return res.status(400).json({ message: 'Email already exists' });
+      return res.status(400).json({ message: '이미 가입된 계정입니다.' });
     }
     const hashed = await bcrypt.hash(password, 10);
     const user = repo.create({ email, password: hashed, name, major });
