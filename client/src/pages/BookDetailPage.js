@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
+import { buildImageUrl } from '../utils/imagePaths';
 
 const BookDetailPage = () => {
   const { id } = useParams();
@@ -63,7 +64,7 @@ const BookDetailPage = () => {
         <div className="grid">
           {book.images.map((img) => (
             <div key={img.id} className="card" style={{ padding: 10 }}>
-              <img src={`/${img.url}`} alt="book" />
+              <img src={buildImageUrl(img.url) || undefined} alt="book" />
             </div>
           ))}
         </div>
