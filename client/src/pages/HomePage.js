@@ -9,6 +9,14 @@ const HomePage = () => {
   const [alerts, setAlerts] = useState([]);
   const { user } = useAuth();
 
+  const formatDate = (value) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '-'
+      : date.toLocaleDateString('ko-KR');
+  };
+
   // 전체 책 불러오기
   useEffect(() => {
     api.get('/books').then((res) => setBooks(res.data.data));
@@ -149,8 +157,10 @@ const HomePage = () => {
                 )}
               </div>
 
-              {/* 출판일 */}
-              <span className="muted">{book.publishedAt}</span>
+              {/* 출판일 + 판매자 등록일 */}
+              <span className="muted">
+                출판일 {book.publishedAt} · 판매자 등록일 {formatDate(book.seller?.createdAt)}
+              </span>
             </div>
           </Link>
         ))}
