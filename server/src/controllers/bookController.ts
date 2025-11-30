@@ -50,7 +50,7 @@ export const createBook = async (req: Request, res: Response) => {
   const imageRepo = AppDataSource.getRepository(BookImage);
   const user = req.user as User;
   try {
-    const { isbn, title, author, publisher, publishedAt, price, condition, description } = req.body;
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, listPrice } = req.body;
     const book = repo.create({
       isbn,
       title,
@@ -58,6 +58,7 @@ export const createBook = async (req: Request, res: Response) => {
       publisher,
       publishedAt,
       price,
+      listPrice: listPrice ? Number(listPrice) : null,
       condition,
       description,
       seller: user,
@@ -85,8 +86,19 @@ export const updateBook = async (req: Request, res: Response) => {
     const book = await repo.findOne({ where: { id: Number(req.params.id) }, relations: ['seller', 'images'] });
     if (!book) return res.status(404).json({ message: 'Book not found' });
     if (book.seller.id !== user.id) return res.status(403).json({ message: 'Forbidden' });
-    const { isbn, title, author, publisher, publishedAt, price, condition, description, status } = req.body;
-    Object.assign(book, { isbn, title, author, publisher, publishedAt, price, condition, description, status });
+    const { isbn, title, author, publisher, publishedAt, price, condition, description, status, listPrice } = req.body;
+    Object.assign(book, {
+      isbn,
+      title,
+      author,
+      publisher,
+      publishedAt,
+      price,
+      condition,
+      description,
+      status,
+      listPrice: listPrice ? Number(listPrice) : null,
+    });
 
     if (req.files && Array.isArray(req.files) && req.files.length) {
       await imageRepo.delete({ book: { id: book.id } });
@@ -136,6 +148,7 @@ export const searchByIsbn = async (req: Request, res: Response) => {
       publisher: item.publisher,
       publishedAt: item.pubdate,
       image: item.image,
+      listPrice: item.price ? Number(item.price) : null,
     };
     return res.json(normalized);
   } catch (err) {

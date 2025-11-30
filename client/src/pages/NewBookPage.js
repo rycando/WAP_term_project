@@ -9,6 +9,7 @@ const NewBookPage = () => {
     publisher: '',
     publishedAt: '',
     price: '',
+    listPrice: '',
     condition: 'A',
     description: '',
   });
@@ -41,7 +42,11 @@ const NewBookPage = () => {
     try {
       const res = await api.get(`/books/isbn/${form.isbn}`);
       setLookupResult(res.data);
-      setForm((prev) => ({ ...prev, ...res.data }));
+      setForm((prev) => ({
+        ...prev,
+        ...res.data,
+        listPrice: res.data.listPrice ? String(res.data.listPrice) : '',
+      }));
     } catch (err) {
       alert('ISBN 검색 결과가 없습니다.');
     } finally {
@@ -70,6 +75,7 @@ const NewBookPage = () => {
           <input name="publisher" placeholder="출판사" value={form.publisher} onChange={handleChange} />
           <input name="publishedAt" placeholder="출판일" value={form.publishedAt} onChange={handleChange} />
           <input name="price" placeholder="가격" value={form.price} onChange={handleChange} />
+          <input name="listPrice" placeholder="정가 (네이버 자동입력)" value={form.listPrice} onChange={handleChange} />
           <select name="condition" value={form.condition} onChange={handleChange}>
             <option value="S">S · 새 책 수준</option>
             <option value="A">A · 사용감 적음</option>
