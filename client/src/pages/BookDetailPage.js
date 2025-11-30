@@ -15,13 +15,6 @@ const BookDetailPage = () => {
     api.get(`/books/${id}`).then((res) => setBook(res.data));
   }, [id]);
 
-  const normalizeImagePath = (path) => {
-    if (!path) return null;
-    const uploadsIndex = path.lastIndexOf('uploads/');
-    if (uploadsIndex >= 0) return path.slice(uploadsIndex);
-    return path.replace(/^\//, '');
-  };
-
   const handleStartChat = async () => {
     if (!user) {
       navigate('/login', { state: { from: location.pathname } });
@@ -70,7 +63,7 @@ const BookDetailPage = () => {
         <div className="grid">
           {book.images.map((img) => (
             <div key={img.id} className="card" style={{ padding: 10 }}>
-              <img src={`/${normalizeImagePath(img.url)}`} alt="book" />
+              <img src={`/${img.url}`} alt="book" />
             </div>
           ))}
         </div>
