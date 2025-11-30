@@ -12,8 +12,16 @@ const RegisterPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await register({ email, password, name, major });
-    navigate('/');
+    if (!email.trim() || !password.trim() || !name.trim() || !major.trim()) {
+      alert('아직 빈 칸이 있습니다.');
+      return;
+    }
+    try {
+      await register({ email, password, name, major });
+      navigate('/');
+    } catch (err) {
+      alert(err.response?.data?.message || '회원가입에 실패했습니다.');
+    }
   };
 
   return (

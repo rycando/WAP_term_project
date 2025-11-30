@@ -22,12 +22,22 @@ const BookDetailPage = () => {
   };
 
   useEffect(() => {
-    api.get(`/books/${id}`).then((res) => setBook(res.data));
-  }, [id]);
+    api
+      .get(`/books/${id}`)
+      .then((res) => setBook(res.data))
+      .catch(() => {
+        alert('삭제되었거나 존재하지 않는 상품입니다.');
+        navigate('/');
+      });
+  }, [id, navigate]);
 
   const handleStartChat = async () => {
     if (!user) {
       navigate('/login', { state: { from: location.pathname } });
+      return;
+    }
+    if (book?.status === 'SOLD' && user?.id !== book.seller?.id) {
+      alert('이미 판매 완료된 상품입니다.');
       return;
     }
     setCreatingRoom(true);
