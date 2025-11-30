@@ -6,7 +6,8 @@
     "install": "cd server && npm install && cd ../client && npm install",
     "start": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
     "docker:up": "docker-compose up -d --build",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "compose": "npm run docker:down && npm run docker:up"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

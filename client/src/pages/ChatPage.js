@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../api/apiClient';
+import { useAuth } from '../context/AuthContext';
 
 const ChatPage = () => {
+  const { user } = useAuth();
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -10,6 +12,7 @@ const ChatPage = () => {
   const [appointmentAt, setAppointmentAt] = useState('');
   const [appointmentPlace, setAppointmentPlace] = useState('');
   const [savingAppointment, setSavingAppointment] = useState(false);
+  const [appointmentPanelOpen, setAppointmentPanelOpen] = useState({});
   const [searchParams] = useSearchParams();
   const targetRoomId = searchParams.get('roomId');
 
@@ -31,6 +34,14 @@ const ChatPage = () => {
     const placeText = place || '장소 미정';
     return `${dateText} · ${placeText}`;
   };
+
+  const formatTime = (value) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const avatarLetter = (name = '') => (name.trim()[0] || '?').toUpperCase();
 
   useEffect(() => {
     api.get('/chat/rooms').then((res) => setRooms(res.data));
@@ -68,8 +79,13 @@ const ChatPage = () => {
       setAppointmentPlace('');
       return;
     }
+    const hasAppointment = !!(selectedRoom.appointmentAt || selectedRoom.appointmentPlace);
     setAppointmentAt(toInputDateTime(selectedRoom.appointmentAt));
     setAppointmentPlace(selectedRoom.appointmentPlace || '');
+    setAppointmentPanelOpen((prev) => ({
+      ...prev,
+      [selectedRoom.id]: hasAppointment ? prev[selectedRoom.id] ?? true : false,
+    }));
   }, [selectedRoom]);
 
   const sendMessage = async () => {
@@ -90,6 +106,7 @@ const ChatPage = () => {
       });
       setSelectedRoom(res.data);
       setRooms((prev) => prev.map((room) => (room.id === res.data.id ? res.data : room)));
+      setAppointmentPanelOpen((prev) => ({ ...prev, [res.data.id]: true }));
     } finally {
       setSavingAppointment(false);
     }
@@ -109,84 +126,161 @@ const ChatPage = () => {
     setAppointmentAt('');
     setAppointmentPlace('');
     saveAppointment(null, null);
+    if (selectedRoom) {
+      setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: false }));
+    }
+  };
+
+  const currentPanelOpen = selectedRoom ? appointmentPanelOpen[selectedRoom.id] : false;
+  const hasAppointment = !!(selectedRoom?.appointmentAt || selectedRoom?.appointmentPlace);
+  const closeAppointmentPanel = () => {
+    if (selectedRoom) {
+      setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: false }));
+    }
   };
 
   return (
     <div className="container">
-      <div className="chat-layout">
-        <div className="card chat-list">
-          <div className="section-heading">
-            <h3>채팅방</h3>
+      <div className="chat-shell">
+        <div className="chat-sidebar card">
+          <div className="chat-sidebar-header">
+            <h3>채팅</h3>
             <span className="muted">{rooms.length}개</span>
           </div>
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              className={`card chat-room-card ${selectedRoom?.id === room.id ? 'active' : ''}`}
-              onClick={() => setSelectedRoom(room)}
-            >
-              <div className="section-heading">
-                <div>
-                  <p className="muted">#{room.id}</p>
-                  <h4>{room.book?.title}</h4>
+          <div className="chat-sidebar-list">
+            {rooms.map((room) => (
+              <div
+                key={room.id}
+                className={`chat-room-card ${selectedRoom?.id === room.id ? 'active' : ''}`}
+                onClick={() => setSelectedRoom(room)}
+              >
+                <div className="avatar">{avatarLetter(room.book?.title)}</div>
+                <div className="chat-room-meta">
+                  <div className="chat-room-title">
+                    <h4>{room.book?.title}</h4>
+                    <span className="chip subtle">{room.status}</span>
+                  </div>
+                  <p className="muted">판매자 {room.seller?.name} · 구매자 {room.buyer?.name}</p>
                 </div>
-                <span className="chip">{room.status}</span>
               </div>
-              <p className="muted">판매자 {room.seller?.name} · 구매자 {room.buyer?.name}</p>
-            </div>
-          ))}
-          {!rooms.length && <p className="muted">아직 참여 중인 채팅방이 없습니다.</p>}
+            ))}
+            {!rooms.length && <p className="muted">아직 참여 중인 채팅방이 없습니다.</p>}
+          </div>
         </div>
 
-        <div className="card stack">
-          <div className="section-heading">
-            <h3>메시지</h3>
-            <span className="muted">{selectedRoom ? selectedRoom.book?.title : '채팅방을 선택하세요'}</span>
+        <div className="chat-feed card stack">
+          <div className="chat-feed-header">
+            <div>
+              <h3>{selectedRoom ? selectedRoom.book?.title : '채팅방을 선택하세요'}</h3>
+              {selectedRoom && <p className="muted">판매자 {selectedRoom.seller?.name} · 구매자 {selectedRoom.buyer?.name}</p>}
+            </div>
+            {selectedRoom && (
+              <div className="flex" style={{ gap: 8 }}>
+                {!hasAppointment && !currentPanelOpen && (
+                  <button className="ghost" onClick={() => setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: true }))}>
+                    약속 만들기
+                  </button>
+                )}
+                <span className="chip">{selectedRoom.status}</span>
+              </div>
+            )}
           </div>
+
           {selectedRoom ? (
             <>
-              <div className="card" style={{ marginBottom: 12 }}>
-                <div className="section-heading">
-                  <h4>약속 잡기</h4>
-                  <span className="chip">{selectedRoom.appointmentAt || selectedRoom.appointmentPlace ? '약속 있음' : '미정'}</span>
-                </div>
-                <p className="muted">{formatAppointment(selectedRoom.appointmentAt, selectedRoom.appointmentPlace)}</p>
-                <div className="form-grid" style={{ marginTop: 10 }}>
-                  <input
-                    type="datetime-local"
-                    value={appointmentAt}
-                    onChange={(e) => setAppointmentAt(e.target.value)}
-                    placeholder="약속 시간"
-                  />
-                  <input
-                    value={appointmentPlace}
-                    onChange={(e) => setAppointmentPlace(e.target.value)}
-                    placeholder="장소 또는 링크"
-                  />
-                </div>
-                <div className="flex" style={{ marginTop: 10 }}>
-                  <button onClick={handleSaveAppointment} disabled={savingAppointment}>
-                    {savingAppointment ? '저장 중...' : '약속 저장'}
-                  </button>
-                  <button
-                    className="ghost"
-                    onClick={clearAppointment}
-                    disabled={savingAppointment || (!selectedRoom.appointmentAt && !selectedRoom.appointmentPlace)}
+              {(hasAppointment || currentPanelOpen) && (
+                <div className="appointment-card">
+                  <div
+                    className="appointment-header"
+                    onClick={() =>
+                      hasAppointment && setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }))
+                    }
                   >
-                    약속 비우기
-                  </button>
-                </div>
-              </div>
-              <div className="message-list">
-                {messages.map((m) => (
-                  <div key={m.id} className="message">
-                    <strong>{m.sender?.name}</strong>
-                    <p style={{ margin: 0 }}>{m.message}</p>
+                    <div>
+                      <div className="flex" style={{ gap: 8 }}>
+                        <h4 style={{ margin: 0 }}>약속</h4>
+                        <span className="chip">{hasAppointment ? '예약됨' : '작성 중'}</span>
+                      </div>
+                      <p className="muted" style={{ margin: '4px 0 0' }}>{formatAppointment(selectedRoom.appointmentAt, selectedRoom.appointmentPlace)}</p>
+                    </div>
+                    {hasAppointment ? (
+                      <button
+                        className="ghost"
+                        style={{ padding: '6px 10px' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAppointmentPanelOpen((prev) => ({ ...prev, [selectedRoom.id]: !currentPanelOpen }));
+                        }}
+                      >
+                        {currentPanelOpen ? '접기' : '펼치기'}
+                      </button>
+                    ) : (
+                      <button
+                        className="ghost"
+                        style={{ padding: '6px 10px' }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          closeAppointmentPanel();
+                        }}
+                      >
+                        닫기
+                      </button>
+                    )}
                   </div>
-                ))}
+                  {currentPanelOpen && (
+                    <div className="appointment-body">
+                      <div className="form-grid">
+                        <input
+                          type="datetime-local"
+                          value={appointmentAt}
+                          onChange={(e) => setAppointmentAt(e.target.value)}
+                          placeholder="약속 시간"
+                        />
+                        <input
+                          value={appointmentPlace}
+                          onChange={(e) => setAppointmentPlace(e.target.value)}
+                          placeholder="장소 또는 링크"
+                        />
+                      </div>
+                      <div className="flex" style={{ marginTop: 10 }}>
+                        <button onClick={handleSaveAppointment} disabled={savingAppointment}>
+                          {savingAppointment ? '저장 중...' : '약속 저장'}
+                        </button>
+                        {hasAppointment && (
+                          <button
+                            className="ghost"
+                            onClick={clearAppointment}
+                            disabled={savingAppointment || (!selectedRoom.appointmentAt && !selectedRoom.appointmentPlace)}
+                          >
+                            약속 비우기
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="message-list">
+                {messages.map((m) => {
+                  const mine = user?.id === m.sender?.id;
+                  return (
+                    <div key={m.id} className={`message-row ${mine ? 'mine' : ''}`}>
+                      <div className="avatar small">{avatarLetter(m.sender?.name)}</div>
+                      <div className={`bubble ${mine ? 'me' : ''}`}>
+                        <div className="bubble-meta">
+                          <strong>{m.sender?.name}</strong>
+                          <span className="muted">{formatTime(m.createdAt)}</span>
+                        </div>
+                        <p style={{ margin: 0 }}>{m.message}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+                {!messages.length && <p className="muted">메시지가 없습니다. 인사를 남겨보세요!</p>}
               </div>
-              <div className="flex">
-                <input value={text} onChange={(e) => setText(e.target.value)} placeholder="메시지 입력" />
+              <div className="message-input">
+                <input value={text} onChange={(e) => setText(e.target.value)} placeholder="메시지를 입력하세요" />
                 <button onClick={sendMessage} disabled={!text}>보내기</button>
               </div>
             </>
