@@ -44,6 +44,7 @@ const NewBookPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+
     try {
       const data = new FormData();
       Object.entries(form).forEach(([key, value]) => data.append(key, value));
@@ -62,9 +63,9 @@ const NewBookPage = () => {
   const handleIsbnSearch = async () => {
     if (!form.isbn) return;
     setSearching(true);
+
     try {
       const res = await api.get(`/books/isbn/${form.isbn}`);
-
       setLookupResult(res.data);
 
       setForm((prev) => ({
@@ -138,22 +139,6 @@ const NewBookPage = () => {
             onChange={handleChange}
           />
 
-          {/* 판매가 */}
-          <input
-            name="price"
-            placeholder={pricePlaceholder()}
-            value={form.price}
-            onChange={handleChange}
-          />
-
-          {/* 정가 */}
-          <input
-            name="listPrice"
-            placeholder="정가"
-            value={form.listPrice}
-            onChange={handleChange}
-          />
-
           {/* 상태 선택 */}
           <select
             name="condition"
@@ -165,6 +150,22 @@ const NewBookPage = () => {
             <option value="B">B · 보통</option>
             <option value="C">C · 사용감 많음</option>
           </select>
+
+          {/* 판매가 */}
+          <input
+            name="price"
+            placeholder={pricePlaceholder()}
+            value={form.price}
+            onChange={handleChange}
+          />
+
+          {/* 정가 */}
+          <input
+            name="listPrice"
+            placeholder="정가 (네이버 자동입력)"
+            value={form.listPrice}
+            onChange={handleChange}
+          />
         </div>
 
         <textarea

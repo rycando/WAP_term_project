@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/apiClient';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { buildImageUrl } from '../utils/imagePaths';
 
 const HomePage = () => {
   const [books, setBooks] = useState([]);
@@ -22,6 +23,7 @@ const HomePage = () => {
 
   return (
     <div className="container stack">
+
       {/* 상단 안내 카드 */}
       <div className="card">
         <div className="section-heading">
@@ -50,17 +52,32 @@ const HomePage = () => {
             className="card"
             style={{ textDecoration: 'none' }}
           >
+
+            {/* 이미지 영역 */}
+            <div className="stack" style={{ gap: 12 }}>
+              <div className="book-thumb">
+                {book.mainImage || book.images?.[0] ? (
+                  <img
+                    src={
+                      buildImageUrl(book.mainImage) ||
+                      buildImageUrl(book.images?.[0]?.url) ||
+                      undefined
+                    }
+                    alt={book.title}
+                  />
+                ) : (
+                  <div className="thumb-placeholder">이미지 없음</div>
+                )}
+              </div>
+            </div>
+
             {/* 제목 + 상태 */}
             <div className="section-heading">
-              <div
-                className="flex"
-                style={{ gap: 10, alignItems: 'center' }}
-              >
+              <div className="flex" style={{ gap: 10, alignItems: 'center' }}>
                 <h3
                   style={{
                     margin: 0,
-                    textDecoration:
-                      book.status !== 'ON' ? 'line-through' : 'none'
+                    textDecoration: book.status !== 'ON' ? 'line-through' : 'none'
                   }}
                 >
                   {book.title}
@@ -71,9 +88,7 @@ const HomePage = () => {
                 )}
               </div>
 
-              <span className="chip">
-                상태 {book.condition || '-'}
-              </span>
+              <span className="chip">상태 {book.condition || '-'}</span>
             </div>
 
             {/* 저자 / 출판사 */}
@@ -81,15 +96,16 @@ const HomePage = () => {
               {book.author} · {book.publisher}
             </p>
 
-            {/* 가격 표시 (정가 + 할인가 + 할인율) */}
+            {/* 가격 표시 */}
             <div className="section-heading">
               <div className="stack" style={{ gap: 6 }}>
+
                 {/* 정가 */}
                 {book.listPrice && (
                   <span
                     className="muted"
                     style={{ textDecoration: 'line-through' }}
-                >
+                  >
                     정가 ₩{Number(book.listPrice).toLocaleString()}
                   </span>
                 )}
@@ -106,10 +122,8 @@ const HomePage = () => {
                   <span
                     className="price"
                     style={{
-                      textDecoration:
-                        book.status !== 'ON' ? 'line-through' : 'none',
-                      color:
-                        book.status !== 'ON' ? 'var(--muted)' : undefined
+                      textDecoration: book.status !== 'ON' ? 'line-through' : 'none',
+                      color: book.status !== 'ON' ? 'var(--muted)' : undefined
                     }}
                   >
                     할인가 ₩{Number(book.price).toLocaleString()}
@@ -128,10 +142,7 @@ const HomePage = () => {
                   >
                     {Math.max(
                       0,
-                      Math.round(
-                        (1 - Number(book.price) / Number(book.listPrice)) *
-                          100
-                      )
+                      Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100)
                     )}
                     % 할인
                   </span>
@@ -156,9 +167,7 @@ const HomePage = () => {
           <div className="section-heading">
             <h3>키워드 알림</h3>
             <span className="muted">
-              {alerts.length
-                ? `${alerts.length}건 도착`
-                : '알림 없음'}
+              {alerts.length ? `${alerts.length}건 도착` : '알림 없음'}
             </span>
           </div>
 

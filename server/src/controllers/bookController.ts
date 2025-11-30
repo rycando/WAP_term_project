@@ -4,8 +4,11 @@ import { Book } from '../entities/Book';
 import { BookImage } from '../entities/BookImage';
 import axios from 'axios';
 import { User } from '../entities/User';
+import { normalizeUploadPath } from '../utils/uploads';
 
-// 책 목록 조회 (필터 + 페이징)
+/* -----------------------------
+ *  책 목록 조회 (필터 + 페이징)
+ * ----------------------------- */
 export const listBooks = async (req: Request, res: Response) => {
   const { keyword, major, status, page = 1, limit = 10 } = req.query as any;
   const repo = AppDataSource.getRepository(Book);
@@ -36,13 +39,26 @@ export const listBooks = async (req: Request, res: Response) => {
 
     const [books, count] = await qb.getManyAndCount();
 
-    return res.json({ data: books, total: count });
+    // 이미지 경로 정규화
+    const normalizedBooks = books.map((book) => ({
+      ...book,
+      mainImage: normalizeUploadPath(book.mainImage),
+      images:
+        book.images?.map((img) => ({
+          ...img,
+          url: normalizeUploadPath(img.url),
+        })) ?? [],
+    }));
+
+    return res.json({ data: normalizedBooks, total: count });
   } catch (err) {
     return res.status(500).json({ message: 'Error fetching books', error: err });
   }
 };
 
-// 단일 책 조회
+/* -----------------------------
+ *  단일 책 조회
+ * ----------------------------- */
 export const getBook = async (req: Request, res: Response) => {
   const repo = AppDataSource.getRepository(Book);
 
@@ -54,13 +70,22 @@ export const getBook = async (req: Request, res: Response) => {
 
     if (!book) return res.status(404).json({ message: 'Book not found' });
 
+    // 경로 정규화
+    book.mainImage = normalizeUploadPath(book.mainImage) as any;
+    book.images = book.images?.map((img) => ({
+      ...img,
+      url: normalizeUploadPath(img.url),
+    })) as any;
+
     return res.json(book);
   } catch (err) {
     return res.status(500).json({ message: 'Error fetching book', error: err });
   }
 };
 
-// 책 등록
+/* -----------------------------
+ *  책 등록
+ * ----------------------------- */
 export const createBook = async (req: Request, res: Response) => {
   const repo = AppDataSource.getRepository(Book);
   const imageRepo = AppDataSource.getRepository(BookImage);
@@ -103,14 +128,15 @@ export const createBook = async (req: Request, res: Response) => {
         files.map((f) =>
           imageRepo.create({
             book: savedBook,
-            url: f.path.replace(/\\/g, '/'),
+            url: normalizeUploadPath(
+              f.filename ? `uploads/${f.filename}` : f.path
+            ),
           })
         )
       );
 
       savedBook.images = images;
-      savedBook.mainImage = images[0]?.url ?? null;
-
+      savedBook.mainImage = normalizeUploadPath(images[0]?.url);
       await repo.save(savedBook);
     }
 
@@ -120,7 +146,9 @@ export const createBook = async (req: Request, res: Response) => {
   }
 };
 
-// 책 수정
+/* -----------------------------
+ *  책 수정
+ * ----------------------------- */
 export const updateBook = async (req: Request, res: Response) => {
   const repo = AppDataSource.getRepository(Book);
   const imageRepo = AppDataSource.getRepository(BookImage);
@@ -168,17 +196,19 @@ export const updateBook = async (req: Request, res: Response) => {
 
       const files = req.files as Express.Multer.File[];
 
-      const images = await imageRepo.save(
+      const newImages = await imageRepo.save(
         files.map((f) =>
           imageRepo.create({
             book,
-            url: f.path.replace(/\\/g, '/'),
+            url: normalizeUploadPath(
+              f.filename ? `uploads/${f.filename}` : f.path
+            ),
           })
         )
       );
 
-      book.images = images;
-      book.mainImage = images[0]?.url ?? book.mainImage;
+      book.images = newImages;
+      book.mainImage = normalizeUploadPath(newImages[0]?.url);
     }
 
     const saved = await repo.save(book);
@@ -188,7 +218,9 @@ export const updateBook = async (req: Request, res: Response) => {
   }
 };
 
-// 책 비활성화
+/* -----------------------------
+ *  책 비활성화
+ * ----------------------------- */
 export const deleteBook = async (req: Request, res: Response) => {
   const repo = AppDataSource.getRepository(Book);
   const user = req.user as User;
@@ -212,33 +244,49 @@ export const deleteBook = async (req: Request, res: Response) => {
   }
 };
 
-// ISBN 검색
+/* -----------------------------
+ *  ISBN 검색 (네이버 API)
+ * ----------------------------- */
 export const searchByIsbn = async (req: Request, res: Response) => {
   const { isbn } = req.params;
 
   try {
-    const response = await axios.get(
-      'https://openapi.naver.com/v1/search/book.json',
-      {
-        params: { query: isbn, d_isbn: isbn },
-        headers: {
-          'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
-          'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
-        },
-      }
-    );
+    const headers = {
+      'X-Naver-Client-Id': process.env.NAVER_CLIENT_ID || '',
+      'X-Naver-Client-Secret': process.env.NAVER_CLIENT_SECRET || '',
+    };
 
-    const item = response.data.items?.[0];
+    // 공통 요청 함수
+    const callSearch = async (params: Record<string, string>) => {
+      const response = await axios.get(
+        'https://openapi.naver.com/v1/search/book.json',
+        { params, headers }
+      );
+      return response.data.items?.[0] ?? null;
+    };
 
+    // 1차: d_isbn 조회
+    const isbnResult = await callSearch({ d_isbn: isbn });
+
+    // 가격이 없으면 fallback
+    const needsFallback = !isbnResult?.price;
+
+    // 2차: query 조회
+    const queryResult = needsFallback ? await callSearch({ query: isbn }) : null;
+
+    const item = isbnResult || queryResult;
     if (!item) return res.status(404).json({ message: 'Not found' });
 
+    // 가격 있으면 그걸 우선 사용
+    const source = item?.price ? item : queryResult || isbnResult;
+
     const normalized = {
-      title: item.title?.replace(/<[^>]*>/g, ''),
-      author: item.author,
-      publisher: item.publisher,
-      publishedAt: item.pubdate,
-      image: item.image,
-      listPrice: item.price ? Number(item.price) : null,
+      title: source.title?.replace(/<[^>]*>/g, ''),
+      author: source.author,
+      publisher: source.publisher,
+      publishedAt: source.pubdate,
+      image: source.image,
+      listPrice: source.price ? Number(source.price) : null,
     };
 
     return res.json(normalized);
