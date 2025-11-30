@@ -33,35 +33,40 @@ const NewBookPage = () => {
 
   const pricePlaceholder = () => {
     const suggested = getSuggestedPrice();
-    if (!suggested) return '가격제안 : -원';
-    return `가격제안 : ${suggested.toLocaleString()}원`;
+    if (!suggested) return '가격제안: -원';
+    return `가격제안: ${suggested.toLocaleString()}원`;
   };
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // 책 등록
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
       const data = new FormData();
-      Object.entries(form).forEach(([key, value]) => data.append(key, value));
+      Object.entries(form).forEach(([key, value]) =>
+        data.append(key, value)
+      );
       images.forEach((file) => data.append('images', file));
 
       await api.post('/books', data, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      alert('등록되었습니다');
+      alert('등록되었습니다!');
     } finally {
       setSubmitting(false);
     }
   };
 
+  // ISBN 검색
   const handleIsbnSearch = async () => {
     if (!form.isbn) return;
     setSearching(true);
+
     try {
       const res = await api.get(`/books/isbn/${form.isbn}`);
 
@@ -72,7 +77,7 @@ const NewBookPage = () => {
         ...res.data, // title, author, publisher, publishedAt
         listPrice: res.data.listPrice ? String(res.data.listPrice) : '',
       }));
-    } catch (err) {
+    } catch {
       alert('ISBN 검색 결과가 없습니다.');
     } finally {
       setSearching(false);
@@ -84,7 +89,7 @@ const NewBookPage = () => {
       <div className="section-heading">
         <div>
           <h2>책 등록</h2>
-          <p>ISBN을 검색해 빠르게 채우고, 상태 등급을 선택해 주세요.</p>
+          <p>ISBN으로 자동 입력 후 상태 등급을 선택해 주세요.</p>
         </div>
 
         <button
@@ -102,35 +107,31 @@ const NewBookPage = () => {
 
       <form className="card stack" onSubmit={handleSubmit}>
         <div className="form-grid">
-
+          {/* 기본 정보 */}
           <input
             name="isbn"
             placeholder="ISBN"
             value={form.isbn}
             onChange={handleChange}
           />
-
           <input
             name="title"
             placeholder="제목"
             value={form.title}
             onChange={handleChange}
           />
-
           <input
             name="author"
             placeholder="저자"
             value={form.author}
             onChange={handleChange}
           />
-
           <input
             name="publisher"
             placeholder="출판사"
             value={form.publisher}
             onChange={handleChange}
           />
-
           <input
             name="publishedAt"
             placeholder="출판일"
@@ -149,7 +150,7 @@ const NewBookPage = () => {
           {/* 정가 */}
           <input
             name="listPrice"
-            placeholder="정가"
+            placeholder="정가 (네이버 자동입력)"
             value={form.listPrice}
             onChange={handleChange}
           />
@@ -167,6 +168,7 @@ const NewBookPage = () => {
           </select>
         </div>
 
+        {/* 상세 설명 */}
         <textarea
           name="description"
           placeholder="책에 대한 설명을 추가하세요"
@@ -178,9 +180,7 @@ const NewBookPage = () => {
         <input
           type="file"
           multiple
-          onChange={(e) =>
-            setImages(Array.from(e.target.files || []))
-          }
+          onChange={(e) => setImages(Array.from(e.target.files || []))}
         />
 
         <button type="submit" disabled={submitting}>
