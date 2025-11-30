@@ -269,7 +269,10 @@ export const searchByIsbn = async (req: Request, res: Response) => {
     const listPrice =
       item.price && Number(item.price) > 0
         ? Number(item.price)
+        : item.discount && Number(item.discount) > 0
+        ? Number(item.discount)
         : null;
+
     const normalized = {
       title: item.title?.replace(/<[^>]*>/g, ''),
       author: item.author,
