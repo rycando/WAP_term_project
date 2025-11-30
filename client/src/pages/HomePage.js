@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/apiClient';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { buildImageUrl } from '../utils/imagePaths';
 
 const HomePage = () => {
   const [books, setBooks] = useState([]);
@@ -39,13 +40,49 @@ const HomePage = () => {
       <div className="grid">
         {books.map((book) => (
           <Link key={book.id} to={`/books/${book.id}`} className="card" style={{ textDecoration: 'none' }}>
+            <div className="stack" style={{ gap: 12 }}>
+              <div className="book-thumb">
+                {book.mainImage || book.images?.[0] ? (
+                  <img
+                    src={
+                      buildImageUrl(book.mainImage) || buildImageUrl(book.images?.[0]?.url) || undefined
+                    }
+                    alt={book.title}
+                  />
+                ) : (
+                  <div className="thumb-placeholder">이미지 없음</div>
+                )}
+              </div>
+            </div>
             <div className="section-heading">
-              <h3>{book.title}</h3>
+              <div className="flex" style={{ gap: 10, alignItems: 'center' }}>
+                <h3 style={{ margin: 0, textDecoration: book.status !== 'ON' ? 'line-through' : 'none' }}>{book.title}</h3>
+                {book.status !== 'ON' && <span className="chip danger">판매완료</span>}
+              </div>
               <span className="chip">상태 {book.condition || '-'}</span>
             </div>
             <p>{book.author} · {book.publisher}</p>
             <div className="section-heading">
-              <span className="price">₩{Number(book.price).toLocaleString()}</span>
+              <div className="stack" style={{ gap: 6 }}>
+                <div className="flex" style={{ gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                  <span
+                    className="price"
+                    style={{ textDecoration: book.status !== 'ON' ? 'line-through' : 'none', color: book.status !== 'ON' ? 'var(--muted)' : undefined }}
+                  >
+                    할인가 ₩{Number(book.price).toLocaleString()}
+                  </span>
+                  {book.listPrice && (
+                    <span className="muted" style={{ textDecoration: 'line-through' }}>
+                      정가 ₩{Number(book.listPrice).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                {book.listPrice && book.price && (
+                  <span className="chip" style={{ background: 'var(--primary-100)', color: 'var(--primary-800)', width: 'fit-content' }}>
+                    {Math.max(0, Math.round((1 - Number(book.price) / Number(book.listPrice)) * 100))}% 할인
+                  </span>
+                )}
+              </div>
               <span className="muted">{book.publishedAt}</span>
             </div>
           </Link>

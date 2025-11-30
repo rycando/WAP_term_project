@@ -14,6 +14,15 @@ export const createRoom = async (req: Request, res: Response) => {
     const roomRepo = AppDataSource.getRepository(ChatRoom);
     const book = await bookRepo.findOne({ where: { id: bookId }, relations: ['seller'] });
     if (!book) return res.status(404).json({ message: 'Book not found' });
+
+    if (book.status === 'SOLD') {
+      const soldRoom = await roomRepo.findOne({ where: { book: { id: bookId }, status: 'SOLD' }, relations: ['buyer'] });
+      const isParticipant = soldRoom && (soldRoom.seller.id === user.id || soldRoom.buyer.id === user.id);
+      if (!isParticipant) {
+        return res.status(403).json({ message: 'Book is already sold' });
+      }
+      if (soldRoom) return res.status(201).json(soldRoom);
+    }
     let room = await roomRepo.findOne({ where: { book: { id: bookId }, buyer: { id: user.id } } });
     if (!room) {
       room = roomRepo.create({ book, seller: book.seller, buyer: user, status: 'OPEN' });
@@ -47,8 +56,11 @@ export const postMessage = async (req: Request, res: Response) => {
   try {
     const roomRepo = AppDataSource.getRepository(ChatRoom);
     const messageRepo = AppDataSource.getRepository(ChatMessage);
-    const room = await roomRepo.findOne({ where: { id: roomId } });
+    const room = await roomRepo.findOne({ where: { id: roomId }, relations: ['seller', 'buyer'] });
     if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.seller.id !== user.id && room.buyer.id !== user.id) {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
     const chatMessage = messageRepo.create({ room, sender: user, message });
     const saved = await messageRepo.save(chatMessage);
     return res.status(201).json(saved);
@@ -61,6 +73,13 @@ export const postMessage = async (req: Request, res: Response) => {
 export const listMessages = async (req: Request, res: Response) => {
   const { roomId, after } = req.query as any;
   try {
+    const room = await AppDataSource.getRepository(ChatRoom).findOne({ where: { id: roomId }, relations: ['seller', 'buyer'] });
+    const user = req.user as User;
+    if (!room) return res.status(404).json({ message: 'Room not found' });
+    if (room.seller.id !== user.id && room.buyer.id !== user.id) {
+      return res.status(403).json({ message: 'Not allowed' });
+    }
+
     const qb = AppDataSource.getRepository(ChatMessage)
       .createQueryBuilder('message')
       .leftJoinAndSelect('message.sender', 'sender')
@@ -84,10 +103,11 @@ export const upsertAppointment = async (req: Request, res: Response) => {
   try {
     if (!roomId) return res.status(400).json({ message: 'roomId is required' });
     const roomRepo = AppDataSource.getRepository(ChatRoom);
+    const bookRepo = AppDataSource.getRepository(Book);
     const room = await roomRepo.findOne({ where: { id: roomId }, relations: ['seller', 'buyer', 'book'] });
     if (!room) return res.status(404).json({ message: 'Room not found' });
-    if (room.seller.id !== user.id && room.buyer.id !== user.id) {
-      return res.status(403).json({ message: 'Not allowed' });
+    if (room.seller.id !== user.id) {
+      return res.status(403).json({ message: 'Only the seller can manage appointments' });
     }
 
     let parsedDate: Date | null = null;
@@ -98,9 +118,13 @@ export const upsertAppointment = async (req: Request, res: Response) => {
       }
     }
 
+    const hasAppointment = !!(parsedDate || appointmentPlace);
     room.appointmentAt = parsedDate;
     room.appointmentPlace = appointmentPlace || null;
+    room.status = hasAppointment ? 'SOLD' : 'OPEN';
+    room.book.status = hasAppointment ? 'SOLD' : 'ON';
     await roomRepo.save(room);
+    await bookRepo.save(room.book);
 
     const updated = await roomRepo.findOne({ where: { id: room.id }, relations: ['book', 'seller', 'buyer'] });
     return res.json(updated);
