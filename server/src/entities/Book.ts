@@ -47,7 +47,7 @@ export class Book {
   description!: string;
 
   @Column({ nullable: true })
-  mainImage!: string;
+  mainImage!: string | null;
 
   @Column({ default: 'ON' })
   status!: string;
