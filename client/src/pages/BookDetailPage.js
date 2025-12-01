@@ -86,7 +86,7 @@ const BookDetailPage = () => {
           </div>
         </div>
         <p>{book.description}</p>
-        <div className="flex" style={{ gap: 10 }}>
+        <div className="button-row">
           {book.status === 'SOLD' ? (
             <span className="pill muted">이 책은 판매가 완료되었습니다</span>
           ) : (
@@ -95,13 +95,21 @@ const BookDetailPage = () => {
             </button>
           )}
           {user?.id === book.seller?.id && (
-            <button
-              className="danger"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? '삭제 중...' : '판매 글 삭제'}
-            </button>
+            <>
+              <button
+                className="ghost"
+                onClick={() => navigate(`/books/${id}/edit`)}
+              >
+                판매 글 수정
+              </button>
+              <button
+                className="danger"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? '삭제 중...' : '판매 글 삭제'}
+              </button>
+            </>
           )}
           <button className="ghost" onClick={() => navigate(-1)}>목록으로</button>
         </div>
