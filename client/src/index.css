@@ -334,6 +334,13 @@ button.ghost:hover {
   gap: 14px;
 }
 
+.button-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .flex {
   display: flex;
   gap: 12px;
