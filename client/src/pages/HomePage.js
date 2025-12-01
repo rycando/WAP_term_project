@@ -133,7 +133,7 @@ const HomePage = () => {
                     {/* 할인율 */}
                     {discountByCondition[book.condition] && (
                       <span className="chip highlight">
-                        {discountByCondition[book.condition]}% 할인
+                        {100 - discountByCondition[book.condition]}% 할인
                       </span>
                     )}
                   </div>
