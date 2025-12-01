@@ -48,6 +48,7 @@ const EditBookPage = () => {
     return `가격제안 : ${suggested.toLocaleString()}원`;
   };
 
+  // 충돌 해결: useCallback을 사용하여 함수 재생성을 방지하고 의존성을 명확히 함
   const fetchBook = useCallback(async () => {
     try {
       const res = await api.get(`/books/${id}`);
