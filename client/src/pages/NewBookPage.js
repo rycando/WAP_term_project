@@ -25,8 +25,8 @@ const NewBookPage = () => {
     const base = Number(form.listPrice);
     if (Number.isNaN(base)) return null;
 
-    const ratioMap = { S: 0.8, A: 0.65, B: 0.5, C: 0.4 };
-    const ratio = ratioMap[form.condition] ?? 0.5;
+    const discountPercentMap = { S: 80, A: 65, B: 50, C: 35 };
+    const ratio = (discountPercentMap[form.condition] ?? 50) / 100;
 
     return Math.round((base * ratio) / 1000) * 1000;
   };
