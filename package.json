@@ -3,13 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "install": "cd server && npm install && cd ../client && npm install",
-    "start": "concurrently \"cd server && npm run dev\" \"cd client && npm start\"",
+    "install": "cd server && npm install",
+    "start": "cd server && npm run dev",
     "docker:up": "docker-compose up -d --build",
     "docker:down": "docker-compose down",
     "compose": "npm run docker:down && npm run docker:up"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
   }
 }

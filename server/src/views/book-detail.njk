@@ -1,0 +1,19 @@
+{% extends "layout.njk" %}
+{% set title = "도서 상세 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container stack" data-book-id="{{ params.id }}">
+  <div id="book-loading" class="card">불러오는 중...</div>
+  <div id="book-content" style="display:none;">
+    <div class="card stack" id="book-main"></div>
+    <div id="book-images"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.bookDetailConfig = { id: "{{ params.id }}" };
+</script>
+<script src="/static/js/book-detail.js"></script>
+{% endblock %}

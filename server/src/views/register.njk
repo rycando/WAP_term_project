@@ -1,0 +1,27 @@
+{% extends "layout.njk" %}
+{% set title = "회원가입 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container grid-2">
+  <div class="card stack">
+    <h2>회원가입</h2>
+    <form id="register-form" class="stack">
+      <input type="text" name="name" placeholder="이름" required>
+      <input type="email" name="email" placeholder="학교 이메일" required>
+      <input type="text" name="major" placeholder="전공" required>
+      <input type="password" name="password" placeholder="비밀번호" required>
+      <button type="submit" id="register-button">가입하기</button>
+    </form>
+    <p class="muted">이미 계정이 있다면 <a class="pill" href="/login">로그인</a></p>
+    <p class="muted" id="register-error" style="display:none;color:#fca5a5;"></p>
+  </div>
+  <div class="card">
+    <h3>캠퍼스북</h3>
+    <p>전공서 거래를 간편하게.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/auth.js"></script>
+{% endblock %}

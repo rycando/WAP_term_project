@@ -1,0 +1,16 @@
+{% extends "layout.njk" %}
+{% set title = "마이페이지 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container">
+  <div class="card stack" style="max-width: 520px;">
+    <h2>마이페이지</h2>
+    <p class="muted">계정 정보를 확인하세요.</p>
+    {% if user %}
+      <div class="chip">이메일: {{ user.email }}</div>
+      <div class="chip">이름: {{ user.name }}</div>
+      <div class="chip">전공: {{ user.major }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

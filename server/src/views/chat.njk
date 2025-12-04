@@ -1,0 +1,38 @@
+{% extends "layout.njk" %}
+{% set title = "채팅 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container">
+  <div class="chat-shell">
+    <div class="chat-sidebar card">
+      <div class="chat-sidebar-header">
+        <h3>채팅</h3>
+        <span class="muted" id="room-count">0개</span>
+      </div>
+      <div class="chat-sidebar-list" id="room-list"></div>
+    </div>
+
+    <div class="chat-feed card stack">
+      <div class="chat-feed-header">
+        <div>
+          <h3 id="room-title">채팅방을 선택하세요</h3>
+          <p class="muted" id="room-meta"></p>
+        </div>
+        <div class="flex" style="gap:8px;" id="room-actions"></div>
+      </div>
+
+      <div id="appointment-container"></div>
+
+      <div class="message-list" id="message-list"></div>
+      <div class="message-input">
+        <input id="message-text" placeholder="메시지를 입력하세요" />
+        <button id="message-send" disabled>보내기</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/chat.js"></script>
+{% endblock %}

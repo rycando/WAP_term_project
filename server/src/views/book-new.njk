@@ -1,0 +1,42 @@
+{% extends "layout.njk" %}
+{% set title = "책 등록 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container stack">
+  <div class="section-heading">
+    <div>
+      <h2>책 등록</h2>
+      <p>ISBN을 검색해 빠르게 채우고, 상태 등급을 선택해 주세요.</p>
+    </div>
+    <button type="button" id="isbn-search">ISBN 자동 채우기</button>
+  </div>
+
+  <div class="chip" id="lookup-result" style="display:none;"></div>
+
+  <form class="card stack" id="book-form" enctype="multipart/form-data">
+    <div class="form-grid">
+      <input name="isbn" placeholder="ISBN" />
+      <input name="title" placeholder="제목" />
+      <input name="author" placeholder="저자" />
+      <input name="publisher" placeholder="출판사" />
+      <input name="publishedAt" placeholder="출판일" />
+      <select name="condition">
+        <option value="S">S · 새 책 수준</option>
+        <option value="A" selected>A · 사용감 적음</option>
+        <option value="B">B · 보통</option>
+        <option value="C">C · 사용감 많음</option>
+      </select>
+      <input name="listPrice" placeholder="정가 (네이버 자동입력)" />
+      <input name="price" placeholder="가격제안 : -" />
+    </div>
+
+    <textarea name="description" placeholder="책에 대한 설명을 추가하세요"></textarea>
+    <input type="file" name="images" id="images" multiple />
+    <button type="submit" id="submit-book">등록</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/book-form.js"></script>
+{% endblock %}

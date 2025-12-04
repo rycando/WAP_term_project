@@ -36,13 +36,5 @@ services:
       - "4000:4000"
     volumes:
       - ./server/uploads:/app/uploads
-  client:
-    build: ./client
-    depends_on:
-      - server
-    environment:
-      - REACT_APP_API_BASE_URL=http://server:4000
-    ports:
-      - "3000:80"
 volumes:
   db_data:

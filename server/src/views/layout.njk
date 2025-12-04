@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title or '캠퍼스북' }}</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="top-nav">
+      <div class="nav-links">
+        <a href="/" class="brand">캠퍼스북</a>
+        <span class="badge">전공서 마켓</span>
+      </div>
+      <div class="nav-links">
+        <a class="pill" href="/books/new">판매등록</a>
+        <a class="pill" href="/chat">채팅</a>
+        <a class="pill" href="/keywords">키워드</a>
+      </div>
+      <div class="nav-actions">
+        {% if user %}
+          <span class="chip">{{ user.name }}</span>
+          <form method="post" action="/api/auth/logout" style="display:inline;" id="logout-form">
+            <button class="ghost" type="submit">로그아웃</button>
+          </form>
+          <a class="pill" href="/me">마이페이지</a>
+        {% else %}
+          <a class="pill" href="/login">로그인</a>
+          <a class="pill" href="/register">회원가입</a>
+        {% endif %}
+      </div>
+    </nav>
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script>window.currentUser = {{ (user or null) | json | safe }};</script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/utils.js"></script>
+  <script src="/static/js/common.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

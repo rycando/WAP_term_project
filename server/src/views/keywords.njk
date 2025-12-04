@@ -1,0 +1,23 @@
+{% extends "layout.njk" %}
+{% set title = "키워드 관리 - 캠퍼스북" %}
+
+{% block content %}
+<div class="container">
+  <div class="card stack">
+    <div class="section-heading">
+      <h3>키워드 관리</h3>
+      <span class="muted" id="keyword-count">0개</span>
+    </div>
+    <div class="flex">
+      <input id="keyword-input" placeholder="예: 알고리즘, 선형대수" />
+      <button id="keyword-add" disabled>추가</button>
+    </div>
+    <div class="flex" id="keyword-list" style="flex-wrap: wrap;"></div>
+    <p class="muted" id="keyword-empty">알림을 받고 싶은 키워드를 등록하세요.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/keywords.js"></script>
+{% endblock %}
